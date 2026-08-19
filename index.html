@@ -1,57 +1,121 @@
+
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Meta Ads Ecom Profit Calculator</title><link rel="stylesheet" href="style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meta Ads Ecom Profit Calculator</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main class="app">
-<header><p class="eyebrow">E-COMMERCE TOOL</p><h1>Meta Ads Profit Calculator</h1><p class="sub">Profitability + target calculator for e-commerce Meta Ads.</p></header>
+  <header class="hero">
+    <p class="eyebrow">E-COMMERCE TOOL</p>
+    <h1>Meta Ads Profit Calculator</h1>
+    <p class="sub">Profitability and target calculator for e-commerce Meta Ads.</p>
+  </header>
 
-<section class="panel">
-<div class="head"><h2><i>01</i> Package Economics</h2><button id="addPackage">+ Add Package</button></div>
-<div id="packages"></div>
-</section>
+  <section class="panel">
+    <div class="section-head">
+      <div><span class="step">01</span><div><h2>Package Economics</h2><p class="hint">Enter package inputs side by side to compare packages instantly.</p></div></div>
+      <button id="addPackage" class="primary-btn">+ Create New</button>
+    </div>
+    <div class="table-wrap">
+      <table id="packageTable"></table>
+    </div>
+  </section>
 
-<section class="panel">
-<div class="head"><h2><i>02</i> Meta Ads Settings</h2></div>
-<div class="settings">
-<label>Primary Package / AOV<select id="primaryPackage"></select><small>AOV is taken directly from the selected package value.</small></label>
-<div class="tax"><div><b>Meta Ads Tax</b><small>Apply tax to advertising cost.</small></div><label class="switch"><input id="taxEnabled" type="checkbox"><span></span></label>
-<label>Tax Rate<div class="unit"><input id="taxRate" type="number" value="8" min="0" step=".1"><b>%</b></div></label></div>
-</div></section>
+  <section class="panel">
+    <div class="section-head"><div><span class="step">02</span><h2>Meta Ads Settings</h2></div></div>
+    <div class="settings-grid">
+      <label>Primary Package / AOV
+        <select id="primaryPackage"></select>
+        <small>AOV is taken directly from the selected package selling price.</small>
+      </label>
+      <div class="tax-setting">
+        <div><b>Meta Ads Tax</b><small>Apply tax to actual advertising cost.</small></div>
+        <label class="switch"><input id="taxEnabled" type="checkbox"><span></span></label>
+        <label>Tax Rate
+          <div class="unit"><input id="taxRate" type="number" value="8" min="0" step=".1"><b>%</b></div>
+        </label>
+      </div>
+    </div>
+  </section>
 
-<section class="panel">
-<div class="head"><h2><i>03</i> Profitability</h2></div>
-<div id="presets" class="presets"></div><div id="customWrap" class="custom hidden"><label>Custom Target Net Profit<div class="unit"><input id="customProfit" type="number" value="40" min="0" max="100" step=".1"><b>%</b></div></label></div>
-<div class="metrics">
-<div class="metric"><small>Gross Profit</small><strong id="grossProfit">RM0.00</strong></div>
-<div class="metric"><small>Target Net Profit</small><strong id="targetNet">RM0.00</strong></div>
-<div class="metric main"><small>Maximum CPP</small><strong id="cpp">RM0.00</strong><em>before tax</em></div>
-<div class="metric"><small>CPP incl. Tax</small><strong id="cppTax">RM0.00</strong></div>
-<div class="metric"><small>Target ROAS</small><strong id="roas">—</strong></div>
-<div class="metric"><small>Gross Margin</small><strong id="margin">0.00%</strong></div>
-</div>
-<p class="note"><b>Formula:</b> Target Net Profit = Gross Profit × target %. Maximum CPP = Gross Profit − Target Net Profit.</p>
-</section>
+  <section class="panel">
+    <div class="section-head"><div><span class="step">03</span><h2>Profitability</h2></div></div>
+    <div id="profitPresets" class="presets"></div>
+    <div id="customProfitWrap" class="custom hidden">
+      <label>Custom Target Net Profit
+        <div class="unit"><input id="customProfit" type="number" value="40" min="0" max="100" step=".1"><b>%</b></div>
+      </label>
+    </div>
 
-<section class="panel">
-<div class="head"><h2><i>04</i> Client / Marketer Target</h2><label class="toggleLabel">Commission <label class="switch"><input id="commissionEnabled" type="checkbox"><span></span></label></label></div>
-<div id="commissionFields" class="commission hidden">
-<label>Marketer Commission %<div class="unit"><input id="commissionPct" type="number" value="40" min=".01" max="100" step=".1"><b>%</b></div></label>
-<label>Target Commission<div class="unit"><b>RM</b><input id="targetCommission" type="number" value="4000" min="0" step=".01"></div></label>
-</div>
-<div class="target">
-<div><small>Required Net Profit</small><strong id="reqNet">—</strong></div>
-<div><small>Required Orders</small><strong id="reqOrders">—</strong></div>
-<div><small>Required Revenue</small><strong id="reqRevenue">—</strong></div>
-<div><small>Required Ad Spend</small><strong id="reqSpend">—</strong></div>
-</div>
-<div class="split"><div><small>Marketer Commission</small><strong id="marketer">—</strong></div><div><small>Business Profit</small><strong id="business">—</strong></div></div>
-<h3>Monthly → Daily (30 days)</h3>
-<div class="daily"><div><small>Revenue / Day</small><strong id="dRevenue">—</strong></div><div><small>Orders / Day</small><strong id="dOrders">—</strong></div><div><small>Ad Spend / Day</small><strong id="dSpend">—</strong></div><div><small>Commission / Day</small><strong id="dCommission">—</strong></div><div><small>Business Profit / Day</small><strong id="dBusiness">—</strong></div></div>
-</section>
-<footer>V1 • Profitability + Target</footer>
+    <div class="profit-grid">
+      <article class="profit-card">
+        <small>Target Net Profit / Package</small>
+        <strong id="targetNetProfit">RM0.00</strong>
+      </article>
+      <article class="profit-card">
+        <small>CPP</small>
+        <div class="split-value"><span><b id="cppExTax">RM0.00</b><em>Excl. Tax</em></span><span><b id="cppIncTax">RM0.00</b><em>Incl. Tax</em></span></div>
+      </article>
+      <article class="profit-card">
+        <small>ROAS</small>
+        <div class="split-value"><span><b id="roasExTax">—</b><em>Excl. Tax</em></span><span><b id="roasIncTax">—</b><em>Incl. Tax</em></span></div>
+      </article>
+      <article class="profit-card">
+        <small>ROI</small>
+        <strong id="roi">—</strong>
+      </article>
+    </div>
+    <p class="formula-note"><b>Core formulas:</b> Target Net Profit = Gross Profit × target %. CPP = Gross Profit − Target Net Profit. ROAS = AOV ÷ CPP. ROI = Target Net Profit ÷ CPP.</p>
+  </section>
+
+  <section class="panel">
+    <div class="section-head">
+      <div><span class="step">04</span><div><h2>Client / Marketer Target</h2><p class="hint">Commission is optional. If enabled, both commission % and target RM are required.</p></div></div>
+      <label class="toggle-label">Commission
+        <label class="switch"><input id="commissionEnabled" type="checkbox"><span></span></label>
+      </label>
+    </div>
+
+    <div id="commissionFields" class="commission-fields hidden">
+      <label>Marketer Commission %
+        <div class="unit"><input id="commissionPct" type="number" value="40" min=".01" max="100" step=".1"><b>%</b></div>
+      </label>
+      <label>Target Commission
+        <div class="unit"><b>RM</b><input id="targetCommission" type="number" value="4000" min="0" step=".01"></div>
+      </label>
+    </div>
+
+    <div class="target-section">
+      <div class="subhead"><h3>Monthly Target</h3><span>Based on a 30-day month</span></div>
+      <div class="target-grid">
+        <div><small>Required Net Profit</small><strong id="reqNet">—</strong></div>
+        <div><small>Orders</small><strong id="reqOrders">—</strong></div>
+        <div><small>Sales</small><strong id="reqSales">—</strong></div>
+        <div><small>Ads Spent</small><strong id="reqAds">—</strong></div>
+      </div>
+      <div class="split-grid">
+        <div><small>Marketer Commission</small><strong id="marketerShare">—</strong></div>
+        <div><small>Business Share</small><strong id="businessShare">—</strong></div>
+      </div>
+    </div>
+
+    <div class="target-section">
+      <div class="subhead"><h3>Daily Target</h3><span>Monthly target ÷ 30 days</span></div>
+      <div class="target-grid daily-grid">
+        <div><small>Sales</small><strong id="dailySales">—</strong></div>
+        <div><small>Orders</small><strong id="dailyOrders">—</strong></div>
+        <div><small>Ads Spent</small><strong id="dailyAds">—</strong></div>
+        <div><small>Net Profit</small><strong id="dailyNet">—</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>V2 • Profitability + Target</footer>
 </main>
 <script src="script.js"></script>
-</body></html>
+</body>
+</html>
