@@ -25,7 +25,7 @@
   </section>
 
   <section class="panel">
-    <div class="section-head"><div><span class="step">02</span><h2>Meta Ads Settings</h2></div></div>
+    <div class="section-head"><div><span class="step">02</span><div><h2>Meta Ads Profitability & Settings</h2><p class="hint">Set your Meta Ads tax and target profitability assumptions.</p></div></div></div>
     <div class="settings-grid">
       <label>Primary Package / AOV
         <select id="primaryPackage"></select>
@@ -39,10 +39,9 @@
         </label>
       </div>
     </div>
-  </section>
 
-  <section class="panel">
-    <div class="section-head"><div><span class="step">03</span><h2>Profitability</h2></div></div>
+    <div class="profit-subsection">
+      <div class="subsection-title"><h3>Profitability</h3><span>Choose your target net profit percentage.</span></div>
     <div id="profitPresets" class="presets"></div>
     <div id="customProfitWrap" class="custom hidden">
       <label>Custom Target Net Profit
@@ -68,11 +67,12 @@
         <span class="info" data-tip="ROI = Target Net Profit ÷ CPP Excl. Tax. Tax does not affect ROI.">i</span><strong id="roi">—</strong>
       </article>
     </div>
+    </div>
   </section>
 
   <section class="panel">
     <div class="section-head">
-      <div><span class="step">04</span><div><h2>Client / Marketer Target</h2><p class="hint">Commission is optional. If enabled, both commission % and target RM are required.</p></div></div>
+      <div><span class="step">03</span><div><h2>Client / Marketer Target</h2><p class="hint">Commission is optional. If enabled, both commission % and target RM are required.</p></div></div>
       <label class="toggle-label">Commission
         <label class="switch"><input id="commissionEnabled" type="checkbox"><span></span></label>
       </label>
