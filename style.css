@@ -25,3 +25,8 @@ input,select{width:100%;border:1px solid var(--line);border-radius:8px;padding:9
 .info-dot:hover::after,.info-dot:focus::after{content:attr(title);position:absolute;right:0;bottom:calc(100% + 8px);z-index:50;width:max-content;max-width:250px;padding:8px 10px;border-radius:8px;background:#172033;color:#fff;font-size:11px;font-weight:600;line-height:1.35;text-align:left;white-space:normal;box-shadow:0 6px 18px rgba(22,34,61,.18)}
 .info-dot:hover::before,.info-dot:focus::before{content:"";position:absolute;right:6px;bottom:calc(100% + 3px);border:5px solid transparent;border-top-color:#172033;z-index:51}
 .output-number{display:inline-block}
+
+.row-label{white-space:nowrap}
+.row-label .info-dot{margin-left:6px}
+.row-label .info-dot:hover::after,.row-label .info-dot:focus::after{right:auto;left:0}
+.row-label .info-dot:hover::before,.row-label .info-dot:focus::before{right:auto;left:7px}
