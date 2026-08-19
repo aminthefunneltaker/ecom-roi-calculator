@@ -1,47 +1,183 @@
 const $=id=>document.getElementById(id);
-const money=n=>Number.isFinite(n)?"RM"+n.toLocaleString("en-MY",{minimumFractionDigits:2,maximumFractionDigits:2}):"—";
-const n=v=>Math.max(0,Number(v)||0), p=v=>n(v)/100;
-let S={packages:[
-{name:"1 PCS",qty:1,cogs:15.41,shipping:11,shippingType:"Online",regular:49,selling:36.9},
-{name:"2 PCS",qty:2,cogs:15.41,shipping:11,shippingType:"Online",regular:49,selling:36.9},
-{name:"3 PCS",qty:3,cogs:15.41,shipping:11,shippingType:"Online",regular:49,selling:36.9}
-],primary:0,profit:40,tax:false,taxRate:8,commission:false,commissionPct:40,targetCommission:4000};
+const money=x=>Number.isFinite(x)?"RM"+x.toLocaleString("en-MY",{minimumFractionDigits:2,maximumFractionDigits:2}):"—";
+const num=x=>Math.max(0,Number(x)||0);
+const pct=x=>num(x)/100;
+const round2=x=>Math.round((x+Number.EPSILON)*100)/100;
 
-function calc(x){let revenue=n(x.qty)*n(x.selling),product=n(x.qty)*n(x.cogs),cost=product+n(x.shipping),gross=revenue-cost;return{revenue,product,cost,gross,margin:revenue?gross/revenue:0}}
-function esc(x){return String(x).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-function render(){
-$("packages").innerHTML=S.packages.map((x,i)=>{let c=calc(x);return `<div class="package"><div class="phead"><div class="pname">${esc(x.name||"Package "+(i+1))}</div><div class="pactions"><button data-dup="${i}">Duplicate</button>${S.packages.length>1?`<button data-rem="${i}">Remove</button>`:""}</div></div><div class="grid">
-<label>Package Name<input data-i="${i}" data-k="name" value="${esc(x.name)}"></label>
-<label>Quantity<input data-i="${i}" data-k="qty" type="number" min="1" value="${x.qty}"></label>
-<label>COGS / Unit<div class="unit"><b>RM</b><input data-i="${i}" data-k="cogs" type="number" step=".01" value="${x.cogs}"></div></label>
-<label>Shipping<div class="unit"><b>RM</b><input data-i="${i}" data-k="shipping" type="number" step=".01" value="${x.shipping}"></div></label>
-<label>Shipping Type<select data-i="${i}" data-k="shippingType"><option ${x.shippingType==="Online"?"selected":""}>Online</option><option ${x.shippingType==="COD"?"selected":""}>COD</option></select></label>
-<label>Regular Price / Unit<div class="unit"><b>RM</b><input data-i="${i}" data-k="regular" type="number" step=".01" value="${x.regular}"></div></label>
-<label>Selling Price / Unit<div class="unit"><b>RM</b><input data-i="${i}" data-k="selling" type="number" step=".01" value="${x.selling}"></div></label>
-</div><div class="summary"><div><small>Package Revenue / AOV</small><strong>${money(c.revenue)}</strong></div><div><small>Total Product Cost</small><strong>${money(c.product)}</strong></div><div><small>Total Cost</small><strong>${money(c.cost)}</strong></div><div><small>Gross Profit</small><strong>${money(c.gross)}</strong></div></div></div>`}).join("");
-$("primaryPackage").innerHTML=S.packages.map((x,i)=>`<option value="${i}" ${i===S.primary?"selected":""}>${esc(x.name||"Package "+(i+1))}</option>`).join("");
-update();
+let S={
+ packages:[
+  {name:"1 PCS",qty:1,productCost:15.41,onlineShipping:11,codShipping:11,shippingType:"Online",regular:49,selling:36.90},
+  {name:"2 PCS",qty:2,productCost:15.41,onlineShipping:11,codShipping:11,shippingType:"Online",regular:49,selling:36.90},
+  {name:"3 PCS",qty:3,productCost:15.41,onlineShipping:11,codShipping:11,shippingType:"Online",regular:49,selling:36.90}
+ ],
+ primary:0, profitPct:20, taxEnabled:false, taxRate:8,
+ commissionEnabled:false, commissionPct:40, targetCommission:4000
+};
+
+function calcPackage(x){
+ const q=num(x.qty);
+ const sellingPackage=round2(q*num(x.selling));
+ const regularPackage=round2(q*num(x.regular));
+ const productCostTotal=round2(q*num(x.productCost));
+ const shippingFee=round2(x.shippingType==="COD"?num(x.codShipping):num(x.onlineShipping));
+ const cogs=round2(productCostTotal+shippingFee);
+ const grossProfit=round2(sellingPackage-cogs);
+ const grossMargin=sellingPackage?grossProfit/sellingPackage:0;
+ const discountAmount=round2(regularPackage-sellingPackage);
+ const discountRate=regularPackage?discountAmount/regularPackage:0;
+ return {sellingPackage,regularPackage,productCostTotal,shippingFee,cogs,grossProfit,grossMargin,discountAmount,discountRate};
 }
-function update(){
-let x=S.packages[S.primary],c=calc(x),target=c.gross*p(S.profit),cpp=Math.max(0,c.gross-target),mult=S.tax?1+p(S.taxRate):1,cppTax=cpp*mult,roas=cppTax?c.revenue/cppTax:0;
-$("grossProfit").textContent=money(c.gross);$("targetNet").textContent=money(target);$("cpp").textContent=money(cpp);$("cppTax").textContent=money(cppTax);$("roas").textContent=roas?roas.toFixed(2)+"x":"—";$("margin").textContent=(c.margin*100).toFixed(2)+"%";
-let ids=["reqNet","reqOrders","reqRevenue","reqSpend","marketer","business","dRevenue","dOrders","dSpend","dCommission","dBusiness"];
-if(!S.commission){ids.forEach(i=>$(i).textContent="—");return}
-let cp=p(S.commissionPct);if(!cp){ids.forEach(i=>$(i).textContent="—");return}
-let req=n(S.targetCommission)/cp, orders=target>0?req/target:0, revenue=orders*c.revenue, spend=orders*cppTax, marketer=n(S.targetCommission),business=req-marketer;
-$("reqNet").textContent=money(req);$("reqOrders").textContent=orders?orders.toFixed(2):"—";$("reqRevenue").textContent=money(revenue);$("reqSpend").textContent=money(spend);$("marketer").textContent=money(marketer);$("business").textContent=money(business);
-$("dRevenue").textContent=money(revenue/30);$("dOrders").textContent=orders?(orders/30).toFixed(2):"—";$("dSpend").textContent=money(spend/30);$("dCommission").textContent=money(marketer/30);$("dBusiness").textContent=money(business/30);
+
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+
+function inputCell(i,k,value,step=".01",min="0"){
+ return `<input data-i="${i}" data-k="${k}" type="number" min="${min}" step="${step}" value="${value}">`;
 }
-function setProfit(v){S.profit=n(v);document.querySelectorAll("#presets button").forEach(b=>b.classList.toggle("active",b.dataset.v==v));$("customWrap").classList.toggle("hidden",v!=="custom")}
-[0,20,30,40,50].forEach(v=>{let b=document.createElement("button");b.textContent=v+"%";b.dataset.v=v;b.onclick=()=>setProfit(v);$("presets").appendChild(b)});
-let cb=document.createElement("button");cb.textContent="Custom";cb.dataset.v="custom";cb.onclick=()=>{setProfit("custom");S.profit=n($("customProfit").value);update()};$("presets").appendChild(cb);setProfit(40);
-$("customProfit").oninput=e=>{S.profit=n(e.target.value);update()};
-$("packages").addEventListener("input",e=>{let i=e.target.dataset.i,k=e.target.dataset.k;if(i===undefined)return;S.packages[i][k]=["name","shippingType"].includes(k)?e.target.value:n(e.target.value);render()});
-$("packages").addEventListener("change",e=>{let i=e.target.dataset.i,k=e.target.dataset.k;if(i===undefined)return;S.packages[i][k]=["name","shippingType"].includes(k)?e.target.value:n(e.target.value);render()});
-$("packages").addEventListener("click",e=>{if(e.target.dataset.dup!==undefined){let i=+e.target.dataset.dup;S.packages.splice(i+1,0,{...S.packages[i],name:S.packages[i].name+" Copy"});if(S.primary>i)S.primary++;render()}if(e.target.dataset.rem!==undefined){let i=+e.target.dataset.rem;S.packages.splice(i,1);S.primary=Math.min(S.primary,S.packages.length-1);render()}});
-$("addPackage").onclick=()=>{S.packages.push({...S.packages[S.packages.length-1],name:"Package "+(S.packages.length+1)});render()};
-$("primaryPackage").onchange=e=>{S.primary=+e.target.value;update()};
-$("taxEnabled").onchange=e=>{S.tax=e.target.checked;update()};$("taxRate").oninput=e=>{S.taxRate=n(e.target.value);update()};
-$("commissionEnabled").onchange=e=>{S.commission=e.target.checked;$("commissionFields").classList.toggle("hidden",!S.commission);update()};
-$("commissionPct").oninput=e=>{S.commissionPct=n(e.target.value);update()};$("targetCommission").oninput=e=>{S.targetCommission=n(e.target.value);update()};
-render();
+
+function renderTable(){
+ const cols=S.packages.length;
+ let html=`<thead><tr><th>PACKAGE</th>`;
+ S.packages.forEach((p,i)=>{
+   html+=`<th><div class="package-title">${esc(p.name||`Package ${i+1}`)}</div>${cols>1?`<button class="remove" data-remove="${i}">Remove</button>`:""}</th>`;
+ });
+ html+=`</tr></thead><tbody>`;
+
+ html+=`<tr class="section-row"><td colspan="${cols+1}">INPUT</td></tr>`;
+ const inputRows=[
+  ["Package Name",(i,p)=>`<input data-i="${i}" data-k="name" value="${esc(p.name)}">`],
+  ["Quantity",(i,p)=>inputCell(i,"qty",p.qty,"1","1")],
+  ["Product Cost / Unit",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"productCost",p.productCost)}</div>`],
+  ["Shipping Type",(i,p)=>`<select data-i="${i}" data-k="shippingType"><option ${p.shippingType==="Online"?"selected":""}>Online</option><option ${p.shippingType==="COD"?"selected":""}>COD</option></select>`],
+  ["Shipping Fee",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,p.shippingType==="COD"?"codShipping":"onlineShipping",p.shippingType==="COD"?p.codShipping:p.onlineShipping)}</div><small>Change type to switch fee.</small>`],
+  ["Regular Price / Unit",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"regular",p.regular)}</div>`],
+  ["Selling Price / Unit",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"selling",p.selling)}</div>`]
+ ];
+ inputRows.forEach(([label,fn])=>{
+   html+=`<tr><td class="row-label">${label}</td>${S.packages.map((p,i)=>`<td>${fn(i,p)}</td>`).join("")}</tr>`;
+ });
+
+ html+=`<tr class="section-row"><td colspan="${cols+1}">OUTPUT</td></tr>`;
+ const outputs=[
+  ["Selling Price / Package",c=>money(c.sellingPackage),"good"],
+  ["Regular Price / Package",c=>money(c.regularPackage),"cell-value"],
+  ["Discount / Package",c=>money(c.discountAmount),"discount"],
+  ["Discount Rate",c=>(c.discountRate*100).toFixed(2)+"%","discount"],
+  ["COGS",c=>money(c.cogs),"cell-value"],
+  ["Gross Profit",c=>money(c.grossProfit),"good"],
+  ["Gross Margin",c=>(c.grossMargin*100).toFixed(2)+"%","good"]
+ ];
+ outputs.forEach(([label,fn,cl])=>{
+   html+=`<tr><td class="row-label">${label}</td>${S.packages.map(p=>`<td class="${cl} cell-value">${fn(calcPackage(p))}</td>`).join("")}</tr>`;
+ });
+ html+=`</tbody>`;
+ $("packageTable").innerHTML=html;
+
+ $("primaryPackage").innerHTML=S.packages.map((p,i)=>`<option value="${i}" ${i===S.primary?"selected":""}>${esc(p.name||`Package ${i+1}`)}</option>`).join("");
+ updateProfitability();
+}
+
+function updateProfitability(){
+ const x=S.packages[S.primary], c=calcPackage(x);
+ const targetNet=c.grossProfit*pct(S.profitPct);
+ const cppEx=c.grossProfit-targetNet;
+ const taxMult=S.taxEnabled?1+pct(S.taxRate):1;
+ const cppInc=cppEx*taxMult;
+ const roasEx=cppEx>0?c.sellingPackage/cppEx:0;
+ const roasInc=cppInc>0?c.sellingPackage/cppInc:0;
+ const roi=cppInc>0?targetNet/cppInc:0;
+
+ $("targetNetProfit").textContent=money(round2(targetNet));
+ $("cppExTax").textContent=money(round2(cppEx));
+ $("cppIncTax").textContent=money(round2(cppInc));
+ $("roasExTax").textContent=roasEx?roasEx.toFixed(2)+"x":"—";
+ $("roasIncTax").textContent=roasInc?roasInc.toFixed(2)+"x":"—";
+ $("roi").textContent=roi?roi.toFixed(2):"—";
+
+ updateTargets(c,targetNet,cppInc);
+}
+
+function updateTargets(c,targetNetPerOrder,cppInc){
+ const ids=["reqNet","reqOrders","reqSales","reqAds","marketerShare","businessShare","dailySales","dailyOrders","dailyAds","dailyNet"];
+ if(!S.commissionEnabled){ids.forEach(id=>$(id).textContent="—");return}
+ const commissionPct=pct(S.commissionPct);
+ const targetCommission=round2(num(S.targetCommission));
+ if(commissionPct<=0 || targetCommission<=0 || targetNetPerOrder<=0 || cppInc<0){ids.forEach(id=>$(id).textContent="—");return}
+
+ // The target commission is the marketer's agreed RM target.
+ // Total required net profit BEFORE the commission split = target commission / commission %.
+ const requiredNet=targetCommission/commissionPct;
+ const ordersExact=requiredNet/targetNetPerOrder;
+ const sales=ordersExact*c.sellingPackage;
+ const ads=ordersExact*cppInc;
+ const business=round2(requiredNet-targetCommission);
+
+ $("reqNet").textContent=money(round2(requiredNet));
+ $("reqOrders").textContent=Math.ceil(ordersExact).toLocaleString("en-MY");
+ $("reqSales").textContent=money(round2(sales));
+ $("reqAds").textContent=money(round2(ads));
+ $("marketerShare").textContent=money(targetCommission);
+ $("businessShare").textContent=money(round2(business));
+
+ $("dailySales").textContent=money(round2(sales/30));
+ $("dailyOrders").textContent=Math.ceil(ordersExact/30).toLocaleString("en-MY");
+ $("dailyAds").textContent=money(round2(ads/30));
+ $("dailyNet").textContent=money(round2(requiredNet/30));
+}
+
+function setProfit(v){
+ if(v==="custom"){
+   $("customProfitWrap").classList.remove("hidden");
+   S.profitPct=num($("customProfit").value);
+ }else{
+   S.profitPct=num(v);
+   $("customProfitWrap").classList.add("hidden");
+ }
+ document.querySelectorAll("#profitPresets button").forEach(b=>b.classList.toggle("active",b.dataset.v===String(v)));
+ updateProfitability();
+}
+
+[0,20,30,40,50].forEach(v=>{
+ const b=document.createElement("button");b.textContent=v+"%";b.dataset.v=v;b.onclick=()=>setProfit(v);$("profitPresets").appendChild(b);
+});
+const customBtn=document.createElement("button");customBtn.textContent="Custom";customBtn.dataset.v="custom";customBtn.onclick=()=>setProfit("custom");$("profitPresets").appendChild(customBtn);
+
+$("customProfit").oninput=e=>{S.profitPct=num(e.target.value);updateProfitability()};
+
+$("addPackage").onclick=()=>{
+ const p=S.packages[S.packages.length-1];
+ S.packages.push({...p,name:`${S.packages.length+1} PCS`,qty:num(p.qty)+1});
+ renderTable();
+};
+
+$("packageTable").addEventListener("input",e=>{
+ const i=e.target.dataset.i,k=e.target.dataset.k;
+ if(i===undefined)return;
+ S.packages[Number(i)][k]=k==="name"?e.target.value:num(e.target.value);
+ renderTable();
+});
+
+$("packageTable").addEventListener("change",e=>{
+ const i=e.target.dataset.i,k=e.target.dataset.k;
+ if(i===undefined)return;
+ S.packages[Number(i)][k]=k==="name"||k==="shippingType"?e.target.value:num(e.target.value);
+ renderTable();
+});
+
+$("packageTable").addEventListener("click",e=>{
+ if(e.target.dataset.remove!==undefined){
+   const i=Number(e.target.dataset.remove);
+   S.packages.splice(i,1);
+   S.primary=Math.min(S.primary,S.packages.length-1);
+   renderTable();
+ }
+});
+
+$("primaryPackage").onchange=e=>{S.primary=Number(e.target.value);updateProfitability()};
+$("taxEnabled").onchange=e=>{S.taxEnabled=e.target.checked;updateProfitability()};
+$("taxRate").oninput=e=>{S.taxRate=num(e.target.value);updateProfitability()};
+$("commissionEnabled").onchange=e=>{S.commissionEnabled=e.target.checked;$("commissionFields").classList.toggle("hidden",!S.commissionEnabled);updateProfitability()};
+$("commissionPct").oninput=e=>{S.commissionPct=num(e.target.value);updateProfitability()};
+$("targetCommission").oninput=e=>{S.targetCommission=num(e.target.value);updateProfitability()};
+
+setProfit(20);
+renderTable();
