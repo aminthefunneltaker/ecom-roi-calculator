@@ -91,33 +91,33 @@ function renderTable(){
     html += `<th><div class="package-title">${esc(p.name || `Package ${i+1}`)}</div>${cols>1 ? `<button class="remove" data-remove="${i}">Remove</button>` : ""}</th>`;
   });
   html += `</tr></thead><tbody>`;
-  html += `<tr class="section-row"><td colspan="${cols+1}">INPUT</td></tr>`;
+  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="input-title"><b>INPUT</b><span>All figures shown below are for each unit.</span></div></td></tr>`;
 
   const inputRows = [
     ["Package Name",(i,p)=>`<input data-i="${i}" data-k="name" value="${esc(p.name)}">`],
     ["Quantity",(i,p)=>inputCell(i,"qty",p.qty)],
-    ["Product Cost / Unit",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"productCost",p.productCost)}</div>`],
+    ["Product Cost",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"productCost",p.productCost)}</div>`],
     ["Shipping Fee",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"shippingFee",p.shippingFee)}</div>`],
-    ["Regular Price / Unit",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"regular",p.regular)}</div>`],
-    ["Selling Price / Unit",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"selling",p.selling)}</div>`]
+    ["Regular Price",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"regular",p.regular)}</div>`],
+    ["Selling Price",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"selling",p.selling)}</div>`]
   ];
 
   inputRows.forEach(([label,fn]) => {
     html += `<tr><td class="row-label">${label}</td>${S.packages.map((p,i)=>`<td>${fn(i,p)}</td>`).join("")}</tr>`;
   });
 
-  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="output-title"><b>OUTPUT</b><span>All figures shown below are for each package.</span><span class="info output-info" data-tip="COGS = (Product Cost / Unit × Quantity) + Shipping Fee&#10;Regular Price = (Regular Price / Unit × Quantity) + Shipping Fee&#10;Selling Price = (Selling Price / Unit × Quantity) + Shipping Fee&#10;Discount Amount = Regular Price − Selling Price&#10;Discount Rate = Discount Amount ÷ Regular Price&#10;Gross Profit = Selling Price − COGS&#10;Gross Margin = Gross Profit ÷ Selling Price">i</span></div></td></tr>`;
+  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="output-title"><b>OUTPUT</b><span>All figures shown below are for each package.</span></div></td></tr>`;
   const outputs = [
-    ["COGS",c=>money(c.cogs),"cell-value"],
-    ["Regular Price",c=>money(c.regularPackage),"cell-value"],
-    ["Selling Price",c=>money(c.sellingPackage),"good"],
-    ["Discount Amount",c=>money(c.discountAmount),"discount"],
-    ["Discount Rate",c=>(c.discountRate*100).toFixed(2)+"%","discount"],
-    ["Gross Profit",c=>money(c.grossProfit),"good"],
-    ["Gross Margin",c=>(c.grossMargin*100).toFixed(2)+"%","good"]
+    ["COGS",c=>money(c.cogs),"cell-value","(Product Cost × Quantity) + Shipping Fee"],
+    ["Regular Price",c=>money(c.regularPackage),"cell-value","(Regular Price × Quantity) + Shipping Fee"],
+    ["Selling Price",c=>money(c.sellingPackage),"good","(Selling Price × Quantity) + Shipping Fee"],
+    ["Discount Amount",c=>money(c.discountAmount),"discount","Regular Price − Selling Price"],
+    ["Discount Rate",c=>(c.discountRate*100).toFixed(2)+"%","discount","Discount Amount ÷ Regular Price"],
+    ["Gross Profit",c=>money(c.grossProfit),"good","Selling Price − COGS"],
+    ["Gross Margin",c=>(c.grossMargin*100).toFixed(2)+"%","good","Gross Profit ÷ Selling Price"]
   ];
-  outputs.forEach(([label,fn,cl]) => {
-    html += `<tr><td class="row-label">${label}</td>${S.packages.map(p=>`<td class="${cl} cell-value">${fn(calcPackage(p))}</td>`).join("")}</tr>`;
+  outputs.forEach(([label,fn,cl,formula]) => {
+    html += `<tr><td class="row-label">${label}</td>${S.packages.map(p=>`<td class="${cl} cell-value"><span class="output-number">${fn(calcPackage(p))}</span><span class="info-dot" tabindex="0" title="${formula}" aria-label="Formula: ${formula}">i</span></td>`).join("")}</tr>`;
   });
   html += `</tbody>`;
   $("packageTable").innerHTML = html;
