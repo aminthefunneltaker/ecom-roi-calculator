@@ -16,10 +16,10 @@ let S={
 
 function calcPackage(x){
  const q=num(x.qty);
- const sellingPackage=round2(q*num(x.selling));
+ const shippingFee=round2(x.shippingType==="COD"?num(x.codShipping):num(x.onlineShipping));
+ const sellingPackage=round2(q*num(x.selling)+shippingFee);
  const regularPackage=round2(q*num(x.regular));
  const productCostTotal=round2(q*num(x.productCost));
- const shippingFee=round2(x.shippingType==="COD"?num(x.codShipping):num(x.onlineShipping));
  const cogs=round2(productCostTotal+shippingFee);
  const grossProfit=round2(sellingPackage-cogs);
  const grossMargin=sellingPackage?grossProfit/sellingPackage:0;
@@ -58,11 +58,11 @@ function renderTable(){
 
  html+=`<tr class="section-row"><td colspan="${cols+1}">OUTPUT</td></tr>`;
  const outputs=[
-  ["Selling Price / Package",c=>money(c.sellingPackage),"good"],
+  ["COGS",c=>money(c.cogs),"cell-value"],
   ["Regular Price / Package",c=>money(c.regularPackage),"cell-value"],
+  ["Selling Price / Package",c=>money(c.sellingPackage),"good"],
   ["Discount / Package",c=>money(c.discountAmount),"discount"],
   ["Discount Rate",c=>(c.discountRate*100).toFixed(2)+"%","discount"],
-  ["COGS",c=>money(c.cogs),"cell-value"],
   ["Gross Profit",c=>money(c.grossProfit),"good"],
   ["Gross Margin",c=>(c.grossMargin*100).toFixed(2)+"%","good"]
  ];
@@ -84,7 +84,7 @@ function updateProfitability(){
  const cppInc=cppEx*taxMult;
  const roasEx=cppEx>0?c.sellingPackage/cppEx:0;
  const roasInc=cppInc>0?c.sellingPackage/cppInc:0;
- const roi=cppInc>0?targetNet/cppInc:0;
+ const roi=cppEx>0?targetNet/cppEx:0;
 
  $("targetNetProfit").textContent=money(round2(targetNet));
  $("cppExTax").textContent=money(round2(cppEx));
@@ -153,7 +153,7 @@ $("packageTable").addEventListener("input",e=>{
  const i=e.target.dataset.i,k=e.target.dataset.k;
  if(i===undefined)return;
  S.packages[Number(i)][k]=k==="name"?e.target.value:num(e.target.value);
- renderTable();
+ updateProfitability();
 });
 
 $("packageTable").addEventListener("change",e=>{
