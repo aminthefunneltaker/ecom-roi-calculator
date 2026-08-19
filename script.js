@@ -6,9 +6,7 @@ const round2 = x => Math.round((x + Number.EPSILON) * 100) / 100;
 
 let S = {
   packages: [
-    {name:"1 PCS", qty:1, productCost:15.41, shippingFee:11, regular:49, selling:36.90},
-    {name:"2 PCS", qty:2, productCost:15.41, shippingFee:11, regular:49, selling:36.90},
-    {name:"3 PCS", qty:3, productCost:15.41, shippingFee:11, regular:49, selling:36.90}
+    {name:"Nama pakej", qty:1, productCost:30, shippingFee:10, regular:149, selling:89, currentOrders:0}
   ],
   primary:0,
   profitPct:20,
@@ -226,9 +224,18 @@ $("packageTable").addEventListener("click",e=>{
 });
 
 $("primaryPackage").onchange=e=>{S.primary=Number(e.target.value);updateProfitability();};
-$("taxEnabled").onchange=e=>{S.taxEnabled=e.target.checked;updateProfitability();};
 $("taxRate").addEventListener("input",e=>{formatLiveNumber(e.target);S.taxRate=parseInputValue(e.target.value);updateProfitability();});
-$("commissionEnabled").onchange=e=>{$("commissionFields").classList.toggle("hidden",!e.target.checked);S.commissionEnabled=e.target.checked;updateProfitability();};
+$("commissionEnabled").onchange=e=>{
+  S.commissionEnabled=e.target.checked;
+  if(S.commissionEnabled){
+    S.commissionPct=40;
+    S.targetCommission=4000;
+    $("commissionPct").value="40";
+    $("targetCommission").value="4,000";
+  }
+  $("commissionFields").classList.toggle("hidden",!S.commissionEnabled);
+  updateProfitability();
+};
 $("commissionPct").addEventListener("input",e=>{formatLiveNumber(e.target);S.commissionPct=parseInputValue(e.target.value);updateProfitability();});
 $("targetCommission").addEventListener("input",e=>{formatLiveNumber(e.target);S.targetCommission=parseInputValue(e.target.value);updateProfitability();});
 
