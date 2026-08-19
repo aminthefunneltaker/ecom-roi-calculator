@@ -12,7 +12,6 @@ let S = {
   ],
   primary:0,
   profitPct:20,
-  taxEnabled:false,
   taxRate:8,
   commissionEnabled:false,
   commissionPct:40,
@@ -62,6 +61,8 @@ function formatLiveNumber(input){
   }
   input.setSelectionRange(Math.min(pos, formatted.length), Math.min(pos, formatted.length));
 }
+
+S.packages.forEach(p=>{ if(p.currentOrders===undefined) p.currentOrders=0; });
 
 function calcPackage(x){
   const q = num(x.qty);
@@ -129,7 +130,7 @@ function updateProfitability(){
   const c = calcPackage(S.packages[S.primary]);
   const targetNet = c.grossProfit * pct(S.profitPct);
   const cppEx = c.grossProfit - targetNet;
-  const cppInc = cppEx * (S.taxEnabled ? 1 + pct(S.taxRate) : 1);
+  const cppInc = cppEx * (1 + pct(S.taxRate));
   const roasEx = cppEx > 0 ? c.sellingPackage / cppEx : 0;
   const roasInc = cppInc > 0 ? c.sellingPackage / cppInc : 0;
   const roi = cppEx > 0 ? targetNet / cppEx : 0;
@@ -191,8 +192,10 @@ $("customProfit").addEventListener("input",e=>{ formatLiveNumber(e.target); S.pr
 
 $("addPackage").onclick=()=>{
   const p=S.packages[S.packages.length-1];
-  S.packages.push({...p,name:`${S.packages.length+1} PCS`,qty:num(p.qty)+1});
+  S.packages.push({...p,name:`${S.packages.length+1} PCS`,qty:num(p.qty)+1,currentOrders:0});
   renderTable();
+  renderCurrentPackageTable();
+  updateCurrentPerformance();
 };
 
 $("packageTable").addEventListener("input",e=>{
@@ -217,6 +220,8 @@ $("packageTable").addEventListener("click",e=>{
     S.packages.splice(i,1);
     S.primary=Math.min(S.primary,S.packages.length-1);
     renderTable();
+    renderCurrentPackageTable();
+    updateCurrentPerformance();
   }
 });
 
@@ -227,5 +232,73 @@ $("commissionEnabled").onchange=e=>{$("commissionFields").classList.toggle("hidd
 $("commissionPct").addEventListener("input",e=>{formatLiveNumber(e.target);S.commissionPct=parseInputValue(e.target.value);updateProfitability();});
 $("targetCommission").addEventListener("input",e=>{formatLiveNumber(e.target);S.targetCommission=parseInputValue(e.target.value);updateProfitability();});
 
+
+function renderCurrentPackageTable(){
+  const cols = S.packages.length;
+  let html = `<thead><tr><th>PACKAGE</th>`;
+  S.packages.forEach((p,i)=>{ html += `<th>${esc(p.name || `Package ${i+1}`)}</th>`; });
+  html += `</tr></thead><tbody>`;
+  html += `<tr><td class="row-label">Actual Orders</td>${S.packages.map((p,i)=>`<td>${inputCell(i,"currentOrders",p.currentOrders||0)}</td>`).join("")}</tr>`;
+  html += `</tbody>`;
+  $("currentPackageTable").innerHTML = html;
+}
+
+function updateCurrentPerformance(){
+  let totalOrders=0,totalRevenue=0,totalCogs=0;
+  S.packages.forEach(p=>{
+    const orders=parseInputValue(p.currentOrders||0);
+    const c=calcPackage(p);
+    totalOrders += orders;
+    totalRevenue += orders*c.sellingPackage;
+    totalCogs += orders*c.cogs;
+  });
+  const adsSpend=parseInputValue($("currentAdsSpend").value);
+  const grossProfit=totalRevenue-totalCogs;
+  const netProfit=grossProfit-adsSpend;
+  const aov=totalOrders>0?totalRevenue/totalOrders:0;
+  const cpp=totalOrders>0?adsSpend/totalOrders:0;
+  const roas=adsSpend>0?totalRevenue/adsSpend:0;
+  const roi=adsSpend>0?netProfit/adsSpend:0;
+
+  $("currentOrders").textContent=totalOrders.toLocaleString("en-MY");
+  $("currentAov").textContent=money(aov);
+  $("currentRevenue").textContent=money(totalRevenue);
+  $("currentCogs").textContent=money(totalCogs);
+  $("currentGrossProfit").textContent=money(grossProfit);
+  $("currentCpp").textContent=money(cpp);
+  $("currentRoas").textContent=roas.toFixed(2)+"x";
+  $("currentRoi").textContent=roi.toFixed(2)+"x";
+  $("currentNetProfit").textContent=money(netProfit);
+  $("currentNetProfit").classList.toggle("loss",netProfit<0);
+}
+
+$("currentPackageTable").addEventListener("input",e=>{
+  const i=e.target.dataset.i,k=e.target.dataset.k;
+  if(i===undefined || k!=="currentOrders") return;
+  formatLiveNumber(e.target);
+  S.packages[Number(i)].currentOrders=parseInputValue(e.target.value);
+  updateCurrentPerformance();
+});
+
+$("currentAdsSpend").addEventListener("input",e=>{
+  formatLiveNumber(e.target);
+  updateCurrentPerformance();
+});
+
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t===tab));
+    document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+    const target=tab.dataset.tab==="current"?$("currentTab"):$("mainTab");
+    target.classList.add("active");
+    if(tab.dataset.tab==="current"){
+      renderCurrentPackageTable();
+      updateCurrentPerformance();
+    }
+  };
+});
+
 setProfit(20);
 renderTable();
+renderCurrentPackageTable();
+updateCurrentPerformance();
