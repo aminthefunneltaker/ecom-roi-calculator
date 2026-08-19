@@ -35,7 +35,7 @@
         <div><b>Meta Ads Tax</b><small>Apply tax to actual advertising cost.</small></div>
         <label class="switch"><input id="taxEnabled" type="checkbox"><span></span></label>
         <label>Tax Rate
-          <div class="unit"><input id="taxRate" type="number" value="8" min="0" step=".1"><b>%</b></div>
+          <div class="unit"><input id="taxRate" type="text" value="8" inputmode="decimal" data-format="number"><b>%</b></div>
         </label>
       </div>
     </div>
@@ -46,29 +46,28 @@
     <div id="profitPresets" class="presets"></div>
     <div id="customProfitWrap" class="custom hidden">
       <label>Custom Target Net Profit
-        <div class="unit"><input id="customProfit" type="number" value="40" min="0" max="100" step=".1"><b>%</b></div>
+        <div class="unit"><input id="customProfit" type="text" value="40" inputmode="decimal" data-format="number"><b>%</b></div>
       </label>
     </div>
 
     <div class="profit-grid">
       <article class="profit-card">
         <small>Target Net Profit / Package</small>
-        <strong id="targetNetProfit">RM0.00</strong>
+        <span class="info" data-tip="Target Net Profit = Gross Profit × target profit %">i</span><strong id="targetNetProfit">RM0.00</strong>
       </article>
       <article class="profit-card">
         <small>CPP</small>
-        <div class="split-value"><span><b id="cppExTax">RM0.00</b><em>Excl. Tax</em></span><span><b id="cppIncTax">RM0.00</b><em>Incl. Tax</em></span></div>
+        <span class="info" data-tip="CPP Excl. Tax = Gross Profit − Target Net Profit. CPP Incl. Tax = CPP Excl. Tax × (1 + tax rate)">i</span><div class="split-value"><span><b id="cppExTax">RM0.00</b><em>Excl. Tax</em></span><span><b id="cppIncTax">RM0.00</b><em>Incl. Tax</em></span></div>
       </article>
       <article class="profit-card">
         <small>ROAS</small>
-        <div class="split-value"><span><b id="roasExTax">—</b><em>Excl. Tax</em></span><span><b id="roasIncTax">—</b><em>Incl. Tax</em></span></div>
+        <span class="info" data-tip="ROAS = AOV ÷ CPP. Excl. Tax uses CPP Excl. Tax; Incl. Tax uses CPP Incl. Tax.">i</span><div class="split-value"><span><b id="roasExTax">—</b><em>Excl. Tax</em></span><span><b id="roasIncTax">—</b><em>Incl. Tax</em></span></div>
       </article>
       <article class="profit-card">
         <small>ROI</small>
-        <strong id="roi">—</strong>
+        <span class="info" data-tip="ROI = Target Net Profit ÷ CPP Excl. Tax. Tax does not affect ROI.">i</span><strong id="roi">—</strong>
       </article>
     </div>
-    <p class="formula-note"><b>Core formulas:</b> Target Net Profit = Gross Profit × target %. CPP = Gross Profit − Target Net Profit. ROAS = AOV ÷ CPP. ROI = Target Net Profit ÷ CPP.</p>
   </section>
 
   <section class="panel">
@@ -84,7 +83,7 @@
         <div class="unit"><input id="commissionPct" type="number" value="40" min=".01" max="100" step=".1"><b>%</b></div>
       </label>
       <label>Target Commission
-        <div class="unit"><b>RM</b><input id="targetCommission" type="number" value="4000" min="0" step=".01"></div>
+        <div class="unit"><b>RM</b><input id="targetCommission" type="text" value="4,000" inputmode="decimal" data-format="number"></div>
       </label>
     </div>
 
@@ -97,7 +96,6 @@
         <div><small>Ads Spent</small><strong id="reqAds">—</strong></div>
       </div>
       <div class="split-grid">
-        <div><small>Marketer Commission</small><strong id="marketerShare">—</strong></div>
         <div><small>Business Share</small><strong id="businessShare">—</strong></div>
       </div>
     </div>
@@ -113,7 +111,7 @@
     </div>
   </section>
 
-  <footer>V2 • Profitability + Target</footer>
+  <footer>V3 • Profitability + Target</footer>
 </main>
 <script src="script.js"></script>
 </body>
