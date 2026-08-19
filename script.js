@@ -67,7 +67,7 @@ function calcPackage(x){
   const q = num(x.qty);
   const shippingFee = round2(num(x.shippingFee));
   const cogs = round2(q * num(x.productCost) + shippingFee);
-  const regularPackage = round2(q * num(x.regular));
+  const regularPackage = round2(q * num(x.regular) + shippingFee);
   const sellingPackage = round2(q * num(x.selling) + shippingFee);
   const grossProfit = round2(sellingPackage - cogs);
   const grossMargin = sellingPackage ? grossProfit / sellingPackage : 0;
@@ -106,18 +106,18 @@ function renderTable(){
     html += `<tr><td class="row-label">${label}</td>${S.packages.map((p,i)=>`<td>${fn(i,p)}</td>`).join("")}</tr>`;
   });
 
-  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="output-title">OUTPUT <span>All figures below are shown on a per-package basis.</span></div></td></tr>`;
+  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="output-title"><b>OUTPUT</b><span>All figures shown below are for each package.</span><span class="info output-info" data-tip="COGS = (Product Cost / Unit × Quantity) + Shipping Fee&#10;Regular Price = (Regular Price / Unit × Quantity) + Shipping Fee&#10;Selling Price = (Selling Price / Unit × Quantity) + Shipping Fee&#10;Discount Amount = Regular Price − Selling Price&#10;Discount Rate = Discount Amount ÷ Regular Price&#10;Gross Profit = Selling Price − COGS&#10;Gross Margin = Gross Profit ÷ Selling Price">i</span></div></td></tr>`;
   const outputs = [
-    ["COGS","(Product Cost / Unit × Quantity) + Shipping Fee",c=>money(c.cogs),"cell-value"],
-    ["Regular Price","Regular Price / Unit × Quantity",c=>money(c.regularPackage),"cell-value"],
-    ["Selling Price","(Selling Price / Unit × Quantity) + Shipping Fee",c=>money(c.sellingPackage),"good"],
-    ["Discount Amount","Regular Price − Selling Price",c=>money(c.discountAmount),"discount"],
-    ["Discount Rate","Discount Amount ÷ Regular Price",c=>(c.discountRate*100).toFixed(2)+"%","discount"],
-    ["Gross Profit","Selling Price − COGS",c=>money(c.grossProfit),"good"],
-    ["Gross Margin","Gross Profit ÷ Selling Price",c=>(c.grossMargin*100).toFixed(2)+"%","good"]
+    ["COGS",c=>money(c.cogs),"cell-value"],
+    ["Regular Price",c=>money(c.regularPackage),"cell-value"],
+    ["Selling Price",c=>money(c.sellingPackage),"good"],
+    ["Discount Amount",c=>money(c.discountAmount),"discount"],
+    ["Discount Rate",c=>(c.discountRate*100).toFixed(2)+"%","discount"],
+    ["Gross Profit",c=>money(c.grossProfit),"good"],
+    ["Gross Margin",c=>(c.grossMargin*100).toFixed(2)+"%","good"]
   ];
-  outputs.forEach(([label,tip,fn,cl]) => {
-    html += `<tr><td class="row-label">${label}</td>${S.packages.map(p=>`<td class="${cl} cell-value output-cell"><span class="info" data-tip="${esc(tip)}">i</span>${fn(calcPackage(p))}</td>`).join("")}</tr>`;
+  outputs.forEach(([label,fn,cl]) => {
+    html += `<tr><td class="row-label">${label}</td>${S.packages.map(p=>`<td class="${cl} cell-value">${fn(calcPackage(p))}</td>`).join("")}</tr>`;
   });
   html += `</tbody>`;
   $("packageTable").innerHTML = html;
