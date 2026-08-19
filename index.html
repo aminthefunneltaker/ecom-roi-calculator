@@ -12,8 +12,13 @@
     <p class="eyebrow">E-COMMERCE TOOL</p>
     <h1>Meta Ads Profit Calculator</h1>
     <p class="sub">Profitability and target calculator for e-commerce Meta Ads.</p>
+    <nav class="tabs">
+      <button class="tab active" data-tab="main">Profitability &amp; Target</button>
+      <button class="tab" data-tab="current">Current Performance</button>
+    </nav>
   </header>
 
+  <div id="mainTab" class="tab-panel active">
   <section class="panel">
     <div class="section-head">
       <div><span class="step">01</span><div><h2>Package Economics</h2><p class="hint">Enter package inputs side by side to compare packages instantly.</p></div></div>
@@ -31,9 +36,8 @@
         <select id="primaryPackage"></select>
         <small>AOV is taken directly from the selected package selling price.</small>
       </label>
-      <div class="tax-setting">
-        <div><b>Meta Ads Tax</b><small>Apply tax to actual advertising cost.</small></div>
-        <label class="switch"><input id="taxEnabled" type="checkbox"><span></span></label>
+      <div class="tax-setting tax-rate-only">
+        <div><b>Meta Ads Tax Rate</b><small>Used to calculate CPP and ROAS inclusive of tax.</small></div>
         <label>Tax Rate
           <div class="unit"><input id="taxRate" type="text" value="8" inputmode="decimal" data-format="number"><b>%</b></div>
         </label>
@@ -111,7 +115,46 @@
     </div>
   </section>
 
-  <footer>V3 • Profitability + Target</footer>
+  </div>
+
+  <div id="currentTab" class="tab-panel">
+    <section class="panel">
+      <div class="section-head">
+        <div><span class="step">01</span><div><h2>Current Performance</h2><p class="hint">Enter actual orders and Meta Ads spend to calculate blended performance.</p></div></div>
+      </div>
+      <div class="performance-input-grid">
+        <label>Ads Spend
+          <div class="unit"><b>RM</b><input id="currentAdsSpend" type="text" value="0" inputmode="decimal" data-format="number"></div>
+        </label>
+      </div>
+      <div class="current-packages">
+        <div class="subhead"><h3>Actual Orders by Package</h3><span>Package list is generated from Package Economics.</span></div>
+        <div class="table-wrap"><table id="currentPackageTable"></table></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div><span class="step">02</span><div><h2>Current Performance Results</h2><p class="hint">Calculated from the actual package mix and Meta Ads spend entered above.</p></div></div>
+      </div>
+      <div class="performance-results">
+        <article><small>Total Orders</small><strong id="currentOrders">0</strong></article>
+        <article><small>Blended AOV</small><strong id="currentAov">RM0.00</strong></article>
+        <article><small>Total Revenue</small><strong id="currentRevenue">RM0.00</strong></article>
+        <article><small>Total COGS</small><strong id="currentCogs">RM0.00</strong></article>
+        <article><small>Gross Profit</small><strong id="currentGrossProfit">RM0.00</strong></article>
+        <article><small>CPP</small><strong id="currentCpp">RM0.00</strong></article>
+        <article><small>ROAS</small><strong id="currentRoas">0.00x</strong></article>
+        <article><small>ROI</small><strong id="currentRoi">0.00x</strong></article>
+      </div>
+      <div class="net-result">
+        <small>NET PROFIT / LOSS</small>
+        <strong id="currentNetProfit">RM0.00</strong>
+      </div>
+    </section>
+  </div>
+
+  <footer>V8 • Profitability, Target &amp; Current Performance</footer>
 </main>
 <script src="script.js"></script>
 </body>
