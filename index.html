@@ -10,9 +10,9 @@
 <body>
 <main class="app">
   <header class="hero">
-    <p class="eyebrow">E-COMMERCE TOOL</p>
+    <p class="eyebrow">E-commerce Tool</p>
     <h1>Meta Ads Profit Calculator</h1>
-    <p class="sub">Profitability and target calculator for e-commerce Meta Ads.</p>
+    <p class="sub">Per-order profit, CPP, ROAS &amp; targets — package-level clarity for e-commerce Meta Ads.</p>
     <nav class="tabs">
       <button class="tab active" data-tab="main">Profitability &amp; Target</button>
       <button class="tab" data-tab="current">Current Performance</button>
@@ -22,8 +22,11 @@
   <div id="mainTab" class="tab-panel active">
   <section class="panel">
     <div class="section-head">
-      <div><span class="step">01</span><div><h2>Package Economics</h2><p class="hint">Enter package inputs side by side to compare packages instantly.</p></div></div>
-      <button id="addPackage" class="primary-btn">+ Create New</button>
+      <div class="head-title">
+        <span class="step">01</span>
+        <div><h2>Package Economics</h2><p class="hint">Compare packages side by side. Every value below is per order.</p></div>
+      </div>
+      <button id="addPackage" class="primary-btn">+ Add Package</button>
     </div>
     <div class="table-wrap">
       <table id="packageTable"></table>
@@ -31,75 +34,96 @@
   </section>
 
   <section class="panel">
-    <div class="section-head"><div><span class="step">02</span><div><h2>Meta Ads Profitability & Settings</h2><p class="hint">Set your Meta Ads tax and target profitability assumptions.</p></div></div></div>
+    <div class="section-head">
+      <div class="head-title">
+        <span class="step">02</span>
+        <div><h2>Meta Ads Profitability</h2><p class="hint">Tax rate &amp; target profit — CPP / ROAS / ROI are per order.</p></div>
+      </div>
+    </div>
     <div class="settings-grid">
-      <label>Primary Package / AOV
+      <div class="setting-card">
+        <div class="setting-head">
+          <label for="primaryPackage">Primary Package</label>
+          <span class="hint-chip">AOV basis</span>
+        </div>
         <select id="primaryPackage"></select>
-        <small>AOV = revenue per order pakej terpilih (U × Selling Price + shipping jika dicaj).</small>
-      </label>
-      <div class="tax-setting tax-rate-only">
-        <div><b>Meta Ads Tax Rate</b><small>Used to calculate CPP and ROAS inclusive of tax.</small></div>
-        <label>Tax Rate
-          <div class="unit"><input id="taxRate" type="text" value="8" inputmode="decimal" data-format="number"><b>%</b></div>
-        </label>
+        <p class="field-note">AOV = revenue per order for the selected package.</p>
+      </div>
+      <div class="setting-card">
+        <div class="setting-head">
+          <label for="taxRate">Meta Ads Tax Rate</label>
+          <span class="hint-chip">CPP &amp; ROAS</span>
+        </div>
+        <div class="unit"><input id="taxRate" type="text" value="8" inputmode="decimal" data-format="number"><b>%</b></div>
+        <p class="field-note">Incl. Tax = Excl. Tax × (1 + rate).</p>
       </div>
     </div>
 
     <div class="profit-subsection">
-      <div class="subsection-title"><h3>Profitability</h3><span>Choose your target net profit percentage.</span></div>
-    <div id="profitPresets" class="presets"></div>
-    <div id="customProfitWrap" class="custom hidden">
-      <label>Custom Target Net Profit
-        <div class="unit"><input id="customProfit" type="text" value="40" inputmode="decimal" data-format="number"><b>%</b></div>
-      </label>
-    </div>
+      <div class="subsection-title"><h3>Profitability</h3><span>Target net profit per order, as % of gross profit.</span></div>
+      <div id="profitPresets" class="presets"></div>
+      <div id="customProfitWrap" class="custom hidden">
+        <label>Custom Target Net Profit
+          <div class="unit"><input id="customProfit" type="text" value="40" inputmode="decimal" data-format="number"><b>%</b></div>
+        </label>
+      </div>
 
-    <div class="profit-grid">
-      <article class="profit-card">
-        <small>Target Net Profit / Order</small>
-        <span class="info" data-tip="Target Net Profit (per order) = Gross Profit per order × target profit %">i</span><strong id="targetNetProfit">RM0.00</strong>
-      </article>
-      <article class="profit-card">
-        <small>CPP</small>
-        <span class="info" data-tip="CPP Excl. Tax = Gross Profit per order − Target Net Profit per order. CPP Incl. Tax = CPP Excl. Tax × (1 + tax rate)">i</span><div class="split-value"><span><b id="cppExTax">RM0.00</b><em>Excl. Tax</em></span><span><b id="cppIncTax">RM0.00</b><em>Incl. Tax</em></span></div>
-      </article>
-      <article class="profit-card">
-        <small>ROAS</small>
-        <span class="info" data-tip="ROAS = AOV ÷ CPP. AOV = revenue per order. Excl. Tax uses CPP Excl. Tax; Incl. Tax uses CPP Incl. Tax.">i</span><div class="split-value"><span><b id="roasExTax">—</b><em>Excl. Tax</em></span><span><b id="roasIncTax">—</b><em>Incl. Tax</em></span></div>
-      </article>
-      <article class="profit-card">
-        <small>ROI</small>
-        <span class="info" data-tip="ROI = Target Net Profit per order ÷ CPP Excl. Tax. Tax does not affect ROI.">i</span><strong id="roi">—</strong>
-      </article>
-    </div>
+      <div class="profit-grid">
+        <article class="profit-card">
+          <small>Target Net Profit</small>
+          <span class="info" data-tip="Target Net Profit (per order) = Gross Profit per order × target profit %">i</span>
+          <strong id="targetNetProfit">RM0.00</strong>
+        </article>
+        <article class="profit-card">
+          <small>CPP</small>
+          <span class="info" data-tip="CPP Excl. Tax = Gross Profit − Target Net Profit. CPP Incl. Tax = CPP Excl. Tax × (1 + tax rate)">i</span>
+          <div class="split-value"><span><b id="cppExTax">RM0.00</b><em>Excl. Tax</em></span><span><b id="cppIncTax">RM0.00</b><em>Incl. Tax</em></span></div>
+        </article>
+        <article class="profit-card">
+          <small>ROAS</small>
+          <span class="info" data-tip="ROAS = AOV ÷ CPP. Excl. Tax uses CPP Excl. Tax; Incl. Tax uses CPP Incl. Tax.">i</span>
+          <div class="split-value"><span><b id="roasExTax">—</b><em>Excl. Tax</em></span><span><b id="roasIncTax">—</b><em>Incl. Tax</em></span></div>
+        </article>
+        <article class="profit-card">
+          <small>ROI</small>
+          <span class="info" data-tip="ROI = Target Net Profit per order ÷ CPP Excl. Tax. Tax does not affect ROI.">i</span>
+          <strong id="roi">—</strong>
+        </article>
+      </div>
     </div>
   </section>
 
   <section class="panel">
     <div class="section-head">
-      <div><span class="step">03</span><div><h2>Client / Marketer Target</h2><p class="hint">Commission optional. OFF → key in the Required Net Profit to drive Monthly &amp; Daily targets. ON → it is auto-computed from the commission.</p></div></div>
-      <label class="toggle-label">Commission
+      <div class="head-title">
+        <span class="step">03</span>
+        <div><h2>Client / Marketer Target</h2><p class="hint">Commission ON = auto target. OFF = manual Required Net Profit.</p></div>
+      </div>
+      <div class="toggle-label">
+        <span>Commission</span>
         <label class="switch"><input id="commissionEnabled" type="checkbox"><span></span></label>
-      </label>
+      </div>
     </div>
 
     <div id="commissionFields" class="commission-fields hidden">
-      <label>Marketer Commission %
+      <div class="setting-card">
+        <label for="commissionPct">Marketer Commission %</label>
         <div class="unit"><input id="commissionPct" type="text" value="40" inputmode="decimal" data-format="number"><b>%</b></div>
-      </label>
-      <label>Target Commission
+      </div>
+      <div class="setting-card">
+        <label for="targetCommission">Target Commission</label>
         <div class="unit"><b>RM</b><input id="targetCommission" type="text" value="4,000" inputmode="decimal" data-format="number"></div>
-      </label>
+      </div>
     </div>
 
     <label id="requiredNetWrap" class="required-net">
-      <span>Required Net Profit (RM/month)</span>
+      <span class="required-label">Required Net Profit <span class="hint-chip">RM / month</span></span>
       <div class="unit"><b>RM</b><input id="requiredNet" type="text" value="10,000" inputmode="decimal" data-format="number" disabled></div>
-      <small id="requiredNetHint">Manual input — drives Monthly &amp; Daily targets when Commission is OFF.</small>
+      <small id="requiredNetHint">Manual input — drives targets when Commission is OFF.</small>
     </label>
 
     <div class="target-section">
-      <div class="subhead"><h3>Monthly Target</h3><span>Based on a 30-day month</span></div>
+      <div class="subhead"><h3>Monthly Target</h3><span>30-day month</span></div>
       <div class="target-grid">
         <div><small>Orders</small><strong id="reqOrders">—</strong></div>
         <div><small>Sales</small><strong id="reqSales">—</strong></div>
@@ -111,10 +135,10 @@
     </div>
 
     <div class="target-section">
-      <div class="subhead"><h3>Daily Target</h3><span>Monthly target ÷ 30 days</span></div>
+      <div class="subhead"><h3>Daily Target</h3><span>Monthly ÷ 30 days</span></div>
       <div class="target-grid daily-grid">
-        <div><small>Sales</small><strong id="dailySales">—</strong></div>
         <div><small>Orders</small><strong id="dailyOrders">—</strong></div>
+        <div><small>Sales</small><strong id="dailySales">—</strong></div>
         <div class="ads-card"><small>Ads Spent</small><div class="split-value"><span><b id="dailyAdsEx">—</b><em>Excl. Tax</em></span><span><b id="dailyAdsInc">—</b><em>Incl. Tax</em></span></div></div>
       </div>
     </div>
@@ -125,22 +149,28 @@
   <div id="currentTab" class="tab-panel">
     <section class="panel">
       <div class="section-head">
-        <div><span class="step">01</span><div><h2>Current Performance</h2><p class="hint">Enter actual orders and Meta Ads spend to calculate blended performance.</p></div></div>
+        <div class="head-title">
+          <span class="step">01</span>
+          <div><h2>Current Performance</h2><p class="hint">Actual ads spend + orders per package.</p></div>
+        </div>
       </div>
       <div class="performance-input-grid">
-        <label>Ads Spend
+        <label for="currentAdsSpend">Ads Spend
           <div class="unit"><b>RM</b><input id="currentAdsSpend" type="text" value="0" inputmode="decimal" data-format="number"></div>
         </label>
       </div>
       <div class="current-packages">
-        <div class="subhead"><h3>Actual Orders by Package</h3><span>Package list is generated from Package Economics. Orders = number of orders (each order may carry U packages).</span></div>
+        <div class="subhead"><h3>Actual Orders by Package</h3><span>Each order may carry U units of a package.</span></div>
         <div class="table-wrap"><table id="currentPackageTable"></table></div>
       </div>
     </section>
 
     <section class="panel">
       <div class="section-head">
-        <div><span class="step">02</span><div><h2>Current Performance Results</h2><p class="hint">Calculated from the actual package mix and Meta Ads spend entered above.</p></div></div>
+        <div class="head-title">
+          <span class="step">02</span>
+          <div><h2>Current Performance Results</h2><p class="hint">Blended results from actual mix &amp; spend.</p></div>
+        </div>
       </div>
       <div class="performance-results">
         <article><small>Total Orders</small><strong id="currentOrders">0</strong></article>
@@ -153,7 +183,7 @@
         <article><small>ROI</small><strong id="currentRoi">0.00x</strong></article>
       </div>
       <div class="net-result">
-        <small>NET PROFIT / LOSS</small>
+        <small>Net Profit / Loss</small>
         <strong id="currentNetProfit">RM0.00</strong>
       </div>
     </section>
