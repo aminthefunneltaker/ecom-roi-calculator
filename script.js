@@ -57,7 +57,11 @@ function formatLiveNumber(input){
     const dot = formatted.indexOf(".");
     if(dot >= 0) pos = Math.max(pos, dot + 1);
   }
-  input.setSelectionRange(Math.min(pos, formatted.length), Math.min(pos, formatted.length));
+  // type="number" inputs do not support selection APIs — guard so caret logic
+  // can never throw and kill the caller's input handler mid-update.
+  try {
+    input.setSelectionRange(Math.min(pos, formatted.length), Math.min(pos, formatted.length));
+  } catch(e) { /* number inputs ignore caret positioning */ }
 }
 
 S.packages.forEach(p=>{ if(p.currentOrders===undefined) p.currentOrders=0; });
@@ -147,21 +151,23 @@ function updateTargets(c,targetNetPerOrder,cppInc){
   if(!S.commissionEnabled){ ids.forEach(id=>$(id).textContent="—"); return; }
   const commissionPct = pct(S.commissionPct);
   const targetCommission = parseInputValue(S.targetCommission);
-  if(commissionPct<=0 || targetCommission<=0 || targetNetPerOrder<=0 || cppInc<0){ ids.forEach(id=>$(id).textContent="—"); return; }
+  // Commission % must be in (0,100]; RM target and per-order net profit must be > 0; CPP incl. tax must not be negative.
+  if(commissionPct<=0 || commissionPct>1 || targetCommission<=0 || targetNetPerOrder<=0 || cppInc<0){ ids.forEach(id=>$(id).textContent="—"); return; }
 
-  const requiredNet = targetCommission / commissionPct;
+  const requiredNet = targetCommission / commissionPct;  // net-profit pool that pays the marketer's commission
   const ordersExact = requiredNet / targetNetPerOrder;
-  const sales = ordersExact * c.sellingPackage;
-  const ads = ordersExact * cppInc;
-  const business = requiredNet - targetCommission;
+  const orders = Math.max(1, Math.ceil(ordersExact));    // whole orders (ceil) so the commission target is actually reached
+  const sales = orders * c.sellingPackage;               // sales follow the whole-order count → ties to AOV
+  const ads = orders * cppInc;                           // ad budget that keeps target net profit per order
+  const business = requiredNet - targetCommission;       // business keeps the remainder after commission
 
   $("reqNet").textContent = money(round2(requiredNet));
-  $("reqOrders").textContent = Math.ceil(ordersExact).toLocaleString("en-MY");
+  $("reqOrders").textContent = orders.toLocaleString("en-MY");
   $("reqSales").textContent = money(round2(sales));
   $("reqAds").textContent = money(round2(ads));
   $("businessShare").textContent = money(round2(business));
   $("dailySales").textContent = money(round2(sales/30));
-  $("dailyOrders").textContent = Math.ceil(ordersExact/30).toLocaleString("en-MY");
+  $("dailyOrders").textContent = Math.ceil(orders/30).toLocaleString("en-MY");
   $("dailyAds").textContent = money(round2(ads/30));
 }
 
@@ -228,10 +234,10 @@ $("taxRate").addEventListener("input",e=>{formatLiveNumber(e.target);S.taxRate=p
 $("commissionEnabled").onchange=e=>{
   S.commissionEnabled=e.target.checked;
   if(S.commissionEnabled){
-    S.commissionPct=40;
-    S.targetCommission=4000;
-    $("commissionPct").value="40";
-    $("targetCommission").value="4,000";
+    // Seed usable defaults ONLY when values are missing/invalid — never overwrite
+    // the marketer's own numbers when they toggle commission off and back on.
+    if(S.commissionPct<=0){ S.commissionPct=40; $("commissionPct").value="40"; }
+    if(S.targetCommission<=0){ S.targetCommission=4000; $("targetCommission").value="4,000"; }
   }
   $("commissionFields").classList.toggle("hidden",!S.commissionEnabled);
   updateProfitability();
