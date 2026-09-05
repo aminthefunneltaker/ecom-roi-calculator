@@ -143,11 +143,11 @@ function updateProfitability(){
   $("roasExTax").textContent = roasEx ? roasEx.toFixed(2)+"x" : "—";
   $("roasIncTax").textContent = roasInc ? roasInc.toFixed(2)+"x" : "—";
   $("roi").textContent = roi ? roi.toFixed(2) : "—";
-  updateTargets(c,targetNet,cppInc);
+  updateTargets(c,targetNet,cppInc,cppEx);
 }
 
-function updateTargets(c,targetNetPerOrder,cppInc){
-  const ids = ["reqNet","reqOrders","reqSales","reqAds","businessShare","dailySales","dailyOrders","dailyAds"];
+function updateTargets(c,targetNetPerOrder,cppInc,cppEx){
+  const ids = ["reqNet","reqOrders","reqSales","reqAdsEx","reqAdsInc","businessShare","dailySales","dailyOrders","dailyAdsEx","dailyAdsInc"];
   if(!S.commissionEnabled){ ids.forEach(id=>$(id).textContent="—"); return; }
   const commissionPct = pct(S.commissionPct);
   const targetCommission = parseInputValue(S.targetCommission);
@@ -158,17 +158,20 @@ function updateTargets(c,targetNetPerOrder,cppInc){
   const ordersExact = requiredNet / targetNetPerOrder;
   const orders = Math.max(1, Math.ceil(ordersExact));    // whole orders (ceil) so the commission target is actually reached
   const sales = orders * c.sellingPackage;               // sales follow the whole-order count → ties to AOV
-  const ads = orders * cppInc;                           // ad budget that keeps target net profit per order
+  const adsEx = orders * cppEx;                          // ad budget excl. tax that keeps target net profit per order
+  const adsInc = orders * cppInc;                        // ad budget incl. tax (CPP incl. tax applied to the same order count)
   const business = requiredNet - targetCommission;       // business keeps the remainder after commission
 
   $("reqNet").textContent = money(round2(requiredNet));
   $("reqOrders").textContent = orders.toLocaleString("en-MY");
   $("reqSales").textContent = money(round2(sales));
-  $("reqAds").textContent = money(round2(ads));
+  $("reqAdsEx").textContent = money(round2(adsEx));
+  $("reqAdsInc").textContent = money(round2(adsInc));
   $("businessShare").textContent = money(round2(business));
   $("dailySales").textContent = money(round2(sales/30));
   $("dailyOrders").textContent = Math.ceil(orders/30).toLocaleString("en-MY");
-  $("dailyAds").textContent = money(round2(ads/30));
+  $("dailyAdsEx").textContent = money(round2(adsEx/30));
+  $("dailyAdsInc").textContent = money(round2(adsInc/30));
 }
 
 function setProfit(v){
