@@ -47,3 +47,21 @@ input,select{width:100%;border:1px solid var(--line);border-radius:8px;padding:9
 .net-result strong.loss{color:#c43d3d}
 @media(max-width:850px){.performance-results{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.tax-rate-only{grid-template-columns:1fr}.performance-results{grid-template-columns:1fr}.tabs{overflow-x:auto}}
+
+/* ===== FASA 2: multi-SKU, free shipping, units per order, per-order outputs ===== */
+.target-grid{grid-template-columns:repeat(3,1fr)}
+.required-net{display:block;max-width:520px;margin-bottom:20px}
+.required-net input:disabled{background:#f1f3f7;color:#596274;cursor:not-allowed}
+.required-net.readonly small{color:#596274}
+.toggle-cell{display:flex;justify-content:center;align-items:center}
+.sku-head,.sku-item{display:grid;grid-template-columns:minmax(70px,1fr) 52px 84px 22px;gap:6px;align-items:center}
+.sku-head{font-size:9px;font-weight:750;color:#9aa3b3;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.sku-item{margin:5px 0}
+.sku-unit{margin-top:0}
+.sku-unit input{padding:6px 4px}
+.remove-sku{border:0;background:#f1f3f7;color:#8a92a1;border-radius:6px;width:22px;height:22px;cursor:pointer;font-size:11px;line-height:1;padding:0}
+.remove-sku:hover{background:#ffe3e3;color:#c43d3d}
+.add-sku{border:1px dashed #c3cbda;background:#fbfcfd;color:#596274;border-radius:7px;padding:6px 8px;font-size:11px;font-weight:750;cursor:pointer;margin-top:3px;width:100%}
+.add-sku:hover{border-color:var(--accent);color:var(--accent)}
+@media(max-width:850px){.target-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.target-grid{grid-template-columns:1fr}}

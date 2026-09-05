@@ -3,10 +3,11 @@ const money = x => Number.isFinite(x) ? "RM" + x.toLocaleString("en-MY", {minimu
 const num = x => Math.max(0, Number(x) || 0);
 const pct = x => num(x) / 100;
 const round2 = x => Math.round((x + Number.EPSILON) * 100) / 100;
+const formatPlain = v => Number(v || 0).toLocaleString("en-US", {minimumFractionDigits:0, maximumFractionDigits:2});
 
 let S = {
   packages: [
-    {name:"Nama pakej", qty:1, productCost:30, shippingFee:10, regular:149, selling:89, currentOrders:0}
+    {name:"Nama pakej", skus:[{name:"SKU 1", qty:1, productCost:30}], shippingFee:10, freeShip:false, regular:149, selling:89, unitsPerOrder:1, currentOrders:0}
   ],
   primary:0,
   profitPct:20,
@@ -64,19 +65,46 @@ function formatLiveNumber(input){
   } catch(e) { /* number inputs ignore caret positioning */ }
 }
 
-S.packages.forEach(p=>{ if(p.currentOrders===undefined) p.currentOrders=0; });
+// FASA 2 model: package = {name, skus:[{name,qty,productCost}], shippingFee, freeShip,
+// regular, selling (harga PER PAKEJ), unitsPerOrder (U), currentOrders}
+function normalizePackage(p){
+  if(!Array.isArray(p.skus) || !p.skus.length) p.skus = [{name:"", qty:1, productCost:0}];
+  p.skus.forEach(s => {
+    if(s.name === undefined) s.name = "";
+    if(s.qty === undefined || !(s.qty >= 0)) s.qty = 1;
+    if(s.productCost === undefined || !(s.productCost >= 0)) s.productCost = 0;
+  });
+  if(p.shippingFee === undefined || !(p.shippingFee >= 0)) p.shippingFee = 0;
+  if(p.freeShip === undefined) p.freeShip = false;
+  if(p.regular === undefined || !(p.regular >= 0)) p.regular = 0;
+  if(p.selling === undefined || !(p.selling >= 0)) p.selling = 0;
+  if(!p.unitsPerOrder || p.unitsPerOrder < 1) p.unitsPerOrder = 1;
+  if(p.currentOrders === undefined) p.currentOrders = 0;
+  return p;
+}
+S.packages.forEach(normalizePackage);
 
+// Nilai PER ORDER untuk pakej (U unit pakej per order, shipping sekali per order).
 function calcPackage(x){
-  const q = num(x.qty);
+  const skus = (Array.isArray(x.skus) && x.skus.length) ? x.skus : [{name:"", qty:1, productCost:0}];
+  const U = Math.max(1, Math.floor(Number(x.unitsPerOrder) || 1));
   const shippingFee = round2(num(x.shippingFee));
-  const cogs = round2(q * num(x.productCost) + shippingFee);
-  const regularPackage = round2(q * num(x.regular) + shippingFee);
-  const sellingPackage = round2(q * num(x.selling) + shippingFee);
+  let pieces = 0, cogsUnit = 0;
+  skus.forEach(s => {
+    const q = num(s.qty);
+    pieces += q;
+    cogsUnit += q * num(s.productCost);
+  });
+  cogsUnit = round2(cogsUnit);
+  const chargeShip = !x.freeShip; // free ship ON → shipping kekal dlm COGS, TAK dicaj pada customer
+  const cogs = round2(U * cogsUnit + shippingFee);
+  const regularPackage = round2(U * num(x.regular) + (chargeShip ? shippingFee : 0));
+  const sellingPackage = round2(U * num(x.selling) + (chargeShip ? shippingFee : 0));
   const grossProfit = round2(sellingPackage - cogs);
   const grossMargin = sellingPackage ? grossProfit / sellingPackage : 0;
   const discountAmount = round2(regularPackage - sellingPackage);
   const discountRate = regularPackage ? discountAmount / regularPackage : 0;
-  return {shippingFee,cogs,regularPackage,sellingPackage,grossProfit,grossMargin,discountAmount,discountRate};
+  return {shippingFee, cogsUnit, pieces, U, cogs, regularPackage, sellingPackage, grossProfit, grossMargin, discountAmount, discountRate};
 }
 
 function esc(s){
@@ -87,6 +115,22 @@ function inputCell(i,k,value){
   return `<input data-i="${i}" data-k="${k}" data-numeric="1" inputmode="decimal" type="text" value="${formatNumberInput(value)}">`;
 }
 
+function skuCell(p,i){
+  normalizePackage(p);
+  const canRemove = p.skus.length > 1;
+  let h = `<div class="sku-head"><span>Name</span><span>Qty</span><span>Cost/unit</span><span></span></div>`;
+  p.skus.forEach((s,si) => {
+    h += `<div class="sku-item">
+      <input data-i="${i}" data-sku="${si}" data-k="name" value="${esc(s.name ?? "")}" placeholder="SKU name (optional)">
+      <input data-i="${i}" data-sku="${si}" data-k="qty" data-numeric="1" inputmode="decimal" type="text" value="${formatNumberInput(s.qty)}">
+      <div class="unit sku-unit"><b>RM</b><input data-i="${i}" data-sku="${si}" data-k="productCost" data-numeric="1" inputmode="decimal" type="text" value="${formatNumberInput(s.productCost)}"></div>
+      ${canRemove ? `<button class="remove-sku" data-i="${i}" data-del-sku="${si}" title="Remove SKU">✕</button>` : "<span></span>"}
+    </div>`;
+  });
+  h += `<button class="add-sku" data-add-sku="${i}">+ Add SKU</button>`;
+  return h;
+}
+
 function renderTable(){
   const cols = S.packages.length;
   let html = `<thead><tr><th>PACKAGE</th>`;
@@ -94,29 +138,29 @@ function renderTable(){
     html += `<th><div class="package-title">${esc(p.name || `Package ${i+1}`)}</div>${cols>1 ? `<button class="remove" data-remove="${i}">Remove</button>` : ""}</th>`;
   });
   html += `</tr></thead><tbody>`;
-  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="input-title"><b>INPUT</b><span>All figures shown below are for each unit.</span></div></td></tr>`;
+  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="input-title"><b>INPUT</b><span>SKU qty × cost membina kos 1 pakej. Regular/Selling Price di bawah adalah harga PER PAKEJ.</span></div></td></tr>`;
 
   const inputRows = [
     ["Package Name",(i,p)=>`<input data-i="${i}" data-k="name" value="${esc(p.name)}">`],
-    ["Quantity",(i,p)=>inputCell(i,"qty",p.qty)],
-    ["Product Cost",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"productCost",p.productCost)}</div>`],
+    ["SKUs in Package",(i,p)=>skuCell(p,i)],
     ["Shipping Fee",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"shippingFee",p.shippingFee)}</div>`],
+    ["Free Shipping",(i,p)=>`<div class="toggle-cell"><label class="switch"><input type="checkbox" data-i="${i}" data-free-ship="1" ${p.freeShip?"checked":""}><span></span></label></div>`],
+    ["Units per Order (U)",(i,p)=>inputCell(i,"unitsPerOrder",p.unitsPerOrder)],
     ["Regular Price",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"regular",p.regular)}</div>`],
     ["Selling Price",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"selling",p.selling)}</div>`]
   ];
-
   inputRows.forEach(([label,fn]) => {
     html += `<tr><td class="row-label">${label}</td>${S.packages.map((p,i)=>`<td>${fn(i,p)}</td>`).join("")}</tr>`;
   });
 
-  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="output-title"><b>OUTPUT</b><span>All figures shown below are for each package.</span></div></td></tr>`;
+  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="output-title"><b>OUTPUT</b><span>Semua angka di bawah adalah PER ORDER (U × pakej; shipping sekali per order).</span></div></td></tr>`;
   const outputs = [
-    ["COGS",c=>money(c.cogs),"cell-value","(Product Cost × Quantity) + Shipping Fee"],
-    ["Regular Price",c=>money(c.regularPackage),"cell-value","(Regular Price × Quantity) + Shipping Fee"],
-    ["Selling Price",c=>money(c.sellingPackage),"good","(Selling Price × Quantity) + Shipping Fee"],
-    ["Discount Amount",c=>money(c.discountAmount),"discount","Regular Price − Selling Price"],
+    ["COGS",c=>money(c.cogs),"cell-value","(Σ SKU qty × cost) × U + Shipping Fee. Shipping sentiasa dalam COGS."],
+    ["Regular Price",c=>money(c.regularPackage),"cell-value","U × Regular Price + Shipping Fee (shipping dicaj hanya bila Free Shipping OFF)"],
+    ["Selling Price",c=>money(c.sellingPackage),"good","U × Selling Price + Shipping Fee (shipping dicaj hanya bila Free Shipping OFF). AOV = Selling Price per order ini"],
+    ["Discount Amount",c=>money(c.discountAmount),"discount","Regular Price − Selling Price (per order)"],
     ["Discount Rate",c=>(c.discountRate*100).toFixed(2)+"%","discount","Discount Amount ÷ Regular Price"],
-    ["Gross Profit",c=>money(c.grossProfit),"good","Selling Price − COGS"],
+    ["Gross Profit",c=>money(c.grossProfit),"good","Selling Price − COGS (per order)"],
     ["Gross Margin",c=>(c.grossMargin*100).toFixed(2)+"%","good","Gross Profit ÷ Selling Price"]
   ];
   outputs.forEach(([label,fn,cl,formula]) => {
@@ -143,31 +187,43 @@ function updateProfitability(){
   $("roasExTax").textContent = roasEx ? roasEx.toFixed(2)+"x" : "—";
   $("roasIncTax").textContent = roasInc ? roasInc.toFixed(2)+"x" : "—";
   $("roi").textContent = roi ? roi.toFixed(2) : "—";
-  updateTargets(c,targetNet,cppInc,cppEx);
+  updateTargets(c, round2(targetNet), round2(cppInc), round2(cppEx));
 }
 
 function updateTargets(c,targetNetPerOrder,cppInc,cppEx){
-  const ids = ["reqNet","reqOrders","reqSales","reqAdsEx","reqAdsInc","businessShare","dailySales","dailyOrders","dailyAdsEx","dailyAdsInc"];
-  if(!S.commissionEnabled){ ids.forEach(id=>$(id).textContent="—"); return; }
-  const commissionPct = pct(S.commissionPct);
-  const targetCommission = parseInputValue(S.targetCommission);
-  // Commission % must be in (0,100]; RM target and per-order net profit must be > 0; CPP incl. tax must not be negative.
-  if(commissionPct<=0 || commissionPct>1 || targetCommission<=0 || targetNetPerOrder<=0 || cppInc<0){ ids.forEach(id=>$(id).textContent="—"); return; }
+  const on = S.commissionEnabled;
+  const rn = $("requiredNet"), hint = $("requiredNetHint"), wrap = $("requiredNetWrap"), bwrap = $("businessShareWrap");
+  rn.disabled = on;
+  wrap.classList.toggle("readonly", on);
+  bwrap.classList.toggle("hidden", !on);
 
-  const requiredNet = targetCommission / commissionPct;  // net-profit pool that pays the marketer's commission
-  const ordersExact = requiredNet / targetNetPerOrder;
-  const orders = Math.max(1, Math.ceil(ordersExact));    // whole orders (ceil) so the commission target is actually reached
-  const sales = orders * c.sellingPackage;               // sales follow the whole-order count → ties to AOV
-  const adsEx = orders * cppEx;                          // ad budget excl. tax that keeps target net profit per order
-  const adsInc = orders * cppInc;                        // ad budget incl. tax (CPP incl. tax applied to the same order count)
-  const business = requiredNet - targetCommission;       // business keeps the remainder after commission
+  let requiredNet = null;
+  if(on){
+    const pv = pct(S.commissionPct), tc = parseInputValue(S.targetCommission);
+    hint.textContent = (pv>0 && pv<=1 && tc>0)
+      ? "Auto = Target Commission ÷ Marketer Commission % (read-only while Commission is ON)."
+      : "Auto = Target Commission ÷ Marketer Commission % — set Marketer Commission % dan Target Commission dulu.";
+    if(pv>0 && pv<=1 && tc>0){ requiredNet = tc / pv; rn.value = formatPlain(round2(requiredNet)); }
+    else rn.value = "";
+  }else{
+    hint.textContent = "Manual input — drives Monthly & Daily targets when Commission is OFF.";
+    requiredNet = parseInputValue(rn.value);
+  }
 
-  $("reqNet").textContent = money(round2(requiredNet));
+  const ids = ["reqOrders","reqSales","reqAdsEx","reqAdsInc","businessShare","dailySales","dailyOrders","dailyAdsEx","dailyAdsInc"];
+  const ok = requiredNet != null && requiredNet > 0 && targetNetPerOrder > 0 && cppInc >= 0;
+  if(!ok){ ids.forEach(id=>{ const el=$(id); if(el) el.textContent="—"; }); return; }
+
+  const orders = Math.max(1, Math.ceil(requiredNet / targetNetPerOrder));
+  const sales = orders * c.sellingPackage;
+  const adsEx = orders * cppEx;
+  const adsInc = orders * cppInc;
+
   $("reqOrders").textContent = orders.toLocaleString("en-MY");
   $("reqSales").textContent = money(round2(sales));
   $("reqAdsEx").textContent = money(round2(adsEx));
   $("reqAdsInc").textContent = money(round2(adsInc));
-  $("businessShare").textContent = money(round2(business));
+  if(on) $("businessShare").textContent = money(round2(requiredNet - parseInputValue(S.targetCommission)));
   $("dailySales").textContent = money(round2(sales/30));
   $("dailyOrders").textContent = Math.ceil(orders/30).toLocaleString("en-MY");
   $("dailyAdsEx").textContent = money(round2(adsEx/30));
@@ -198,44 +254,95 @@ $("profitPresets").appendChild(customBtn);
 $("customProfit").addEventListener("input",e=>{ formatLiveNumber(e.target); S.profitPct=parseInputValue(e.target.value); updateProfitability(); });
 
 $("addPackage").onclick=()=>{
-  const p=S.packages[S.packages.length-1];
-  S.packages.push({...p,name:`${S.packages.length+1} PCS`,qty:num(p.qty)+1,currentOrders:0});
+  const src = normalizePackage(S.packages[S.packages.length-1]);
+  S.packages.push({...src, name:`Package ${S.packages.length+1}`, skus:src.skus.map(s=>({...s})), currentOrders:0});
   renderTable();
   renderCurrentPackageTable();
   updateCurrentPerformance();
 };
 
 $("packageTable").addEventListener("input",e=>{
-  const i=e.target.dataset.i, k=e.target.dataset.k;
-  if(i===undefined) return;
-  if(k === "name") S.packages[Number(i)][k] = e.target.value;
-  else { formatLiveNumber(e.target); S.packages[Number(i)][k] = parseInputValue(e.target.value); }
+  const t = e.target, i = t.dataset.i;
+  if(i === undefined || t.dataset.freeShip !== undefined) return;
+  const pkg = S.packages[Number(i)];
+  if(!pkg) return;
+  const si = t.dataset.sku;
+  if(si !== undefined){
+    const sk = pkg.skus[Number(si)];
+    if(!sk) return;
+    const k = t.dataset.k;
+    if(k === "name") sk.name = t.value;
+    else { formatLiveNumber(t); sk[k] = parseInputValue(t.value); }
+    updateProfitability();
+    return;
+  }
+  const k = t.dataset.k;
+  if(k === "name"){ pkg.name = t.value; return; }
+  if(k === "unitsPerOrder"){
+    formatLiveNumber(t);
+    pkg.unitsPerOrder = Math.max(1, Math.floor(parseInputValue(t.value)));
+    updateProfitability();
+    return;
+  }
+  formatLiveNumber(t);
+  pkg[k] = parseInputValue(t.value);
   updateProfitability();
 });
 
 $("packageTable").addEventListener("change",e=>{
-  const i=e.target.dataset.i, k=e.target.dataset.k;
-  if(i===undefined) return;
-  if(k === "name") S.packages[Number(i)][k] = e.target.value;
-  else S.packages[Number(i)][k] = parseInputValue(e.target.value);
+  const t = e.target, i = t.dataset.i;
+  if(i === undefined) return;
+  const pkg = S.packages[Number(i)];
+  if(!pkg) return;
+  if(t.dataset.freeShip !== undefined){
+    pkg.freeShip = t.checked;
+    updateProfitability();
+    return;
+  }
+  const si = t.dataset.sku;
+  if(si !== undefined){
+    const sk = pkg.skus[Number(si)];
+    if(!sk) return;
+    const k = t.dataset.k;
+    if(k === "name") sk.name = t.value;
+    else sk[k] = parseInputValue(t.value);
+    renderTable();
+    return;
+  }
+  const k = t.dataset.k;
+  if(k === "name"){ pkg.name = t.value; renderTable(); return; }
+  if(k === "unitsPerOrder") pkg.unitsPerOrder = Math.max(1, Math.floor(parseInputValue(t.value)));
+  else pkg[k] = parseInputValue(t.value);
   renderTable();
 });
 
 $("packageTable").addEventListener("click",e=>{
-  if(e.target.dataset.remove!==undefined){
-    const i=Number(e.target.dataset.remove);
+  const t = e.target;
+  if(t.dataset.remove !== undefined){
+    const i = Number(t.dataset.remove);
     S.packages.splice(i,1);
-    S.primary=Math.min(S.primary,S.packages.length-1);
+    S.primary = Math.min(S.primary, S.packages.length-1);
     renderTable();
     renderCurrentPackageTable();
     updateCurrentPerformance();
+  }else if(t.dataset.addSku !== undefined){
+    const i = Number(t.dataset.addSku);
+    normalizePackage(S.packages[i]).skus.push({name:"", qty:1, productCost:0});
+    renderTable();
+  }else if(t.dataset.delSku !== undefined){
+    const i = Number(t.dataset.i), si = Number(t.dataset.delSku);
+    const pkg = S.packages[i];
+    if(pkg && pkg.skus.length > 1){
+      pkg.skus.splice(si,1);
+      renderTable();
+    }
   }
 });
 
 $("primaryPackage").onchange=e=>{S.primary=Number(e.target.value);updateProfitability();};
 $("taxRate").addEventListener("input",e=>{formatLiveNumber(e.target);S.taxRate=parseInputValue(e.target.value);updateProfitability();});
 $("commissionEnabled").onchange=e=>{
-  S.commissionEnabled=e.target.checked;
+  S.commissionEnabled = e.target.checked;
   if(S.commissionEnabled){
     // Seed usable defaults ONLY when values are missing/invalid — never overwrite
     // the marketer's own numbers when they toggle commission off and back on.
@@ -247,7 +354,11 @@ $("commissionEnabled").onchange=e=>{
 };
 $("commissionPct").addEventListener("input",e=>{formatLiveNumber(e.target);S.commissionPct=parseInputValue(e.target.value);updateProfitability();});
 $("targetCommission").addEventListener("input",e=>{formatLiveNumber(e.target);S.targetCommission=parseInputValue(e.target.value);updateProfitability();});
-
+$("requiredNet").addEventListener("input",e=>{
+  if(S.commissionEnabled) return; // read-only auto path
+  formatLiveNumber(e.target);
+  updateProfitability();
+});
 
 function renderCurrentPackageTable(){
   const cols = S.packages.length;
@@ -263,7 +374,7 @@ function updateCurrentPerformance(){
   let totalOrders=0,totalRevenue=0,totalCogs=0;
   S.packages.forEach(p=>{
     const orders=parseInputValue(p.currentOrders||0);
-    const c=calcPackage(p);
+    const c=calcPackage(p); // per-order values
     totalOrders += orders;
     totalRevenue += orders*c.sellingPackage;
     totalCogs += orders*c.cogs;
