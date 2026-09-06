@@ -7,7 +7,7 @@ const formatPlain = v => Number(v || 0).toLocaleString("en-US", {minimumFraction
 
 let S = {
   packages: [
-    {name:"Nama pakej", skus:[{name:"SKU 1", qty:1, productCost:30}], shippingFee:10, freeShip:false, regular:149, selling:89, unitsPerOrder:1, currentOrders:0}
+    {name:"Nama pakej", skus:[{name:"SKU 1", qty:1, productCost:30}], shippingCost:4.5, shippingCharge:10, freeShip:false, regular:149, selling:89, currentOrders:0}
   ],
   primary:0,
   profitPct:20,
@@ -65,8 +65,10 @@ function formatLiveNumber(input){
   } catch(e) { /* number inputs ignore caret positioning */ }
 }
 
-// FASA 2 model: package = {name, skus:[{name,qty,productCost}], shippingFee, freeShip,
-// regular, selling (harga PER PAKEJ), unitsPerOrder (U), currentOrders}
+// Model (U dibuang): package = {name, skus:[{name,qty,productCost}], shippingCost, shippingCharge,
+// freeShip, regular, selling (harga PER PAKEJ/order), currentOrders}
+// shippingCost  = kos seller dgn courier — SENTIASA dalam COGS.
+// shippingCharge = amaun dicaj pd customer — ditambah pd harga HANYA bila Free Shipping OFF.
 function normalizePackage(p){
   if(!Array.isArray(p.skus) || !p.skus.length) p.skus = [{name:"", qty:1, productCost:0}];
   p.skus.forEach(s => {
@@ -74,21 +76,24 @@ function normalizePackage(p){
     if(s.qty === undefined || !(s.qty >= 0)) s.qty = 1;
     if(s.productCost === undefined || !(s.productCost >= 0)) s.productCost = 0;
   });
-  if(p.shippingFee === undefined || !(p.shippingFee >= 0)) p.shippingFee = 0;
+  if(p.shippingCost === undefined || !(p.shippingCost >= 0)) p.shippingCost = 0;
+  if(p.shippingCharge === undefined || !(p.shippingCharge >= 0)) p.shippingCharge = 0;
   if(p.freeShip === undefined) p.freeShip = false;
   if(p.regular === undefined || !(p.regular >= 0)) p.regular = 0;
   if(p.selling === undefined || !(p.selling >= 0)) p.selling = 0;
-  if(!p.unitsPerOrder || p.unitsPerOrder < 1) p.unitsPerOrder = 1;
   if(p.currentOrders === undefined) p.currentOrders = 0;
+  delete p.shippingFee;     // legacy pre-split key (model lama)
+  delete p.unitsPerOrder;   // model lama U — dibuang
   return p;
 }
 S.packages.forEach(normalizePackage);
 
-// Nilai PER ORDER untuk pakej (U unit pakej per order, shipping sekali per order).
+// Nilai PER ORDER untuk pakej (1 pakej = 1 order; tiada darab U; shipping sekali per order).
+// Shipping Cost sentiasa dalam COGS. Shipping Charge ditambah pada harga cuma bila Free Shipping OFF.
 function calcPackage(x){
   const skus = (Array.isArray(x.skus) && x.skus.length) ? x.skus : [{name:"", qty:1, productCost:0}];
-  const U = Math.max(1, Math.floor(Number(x.unitsPerOrder) || 1));
-  const shippingFee = round2(num(x.shippingFee));
+  const shippingCost = round2(num(x.shippingCost));
+  const shippingCharge = round2(num(x.shippingCharge));
   let pieces = 0, cogsUnit = 0;
   skus.forEach(s => {
     const q = num(s.qty);
@@ -96,15 +101,15 @@ function calcPackage(x){
     cogsUnit += q * num(s.productCost);
   });
   cogsUnit = round2(cogsUnit);
-  const chargeShip = !x.freeShip; // free ship ON → shipping kekal dlm COGS, TAK dicaj pada customer
-  const cogs = round2(U * cogsUnit + shippingFee);
-  const regularPackage = round2(U * num(x.regular) + (chargeShip ? shippingFee : 0));
-  const sellingPackage = round2(U * num(x.selling) + (chargeShip ? shippingFee : 0));
+  const added = x.freeShip ? 0 : shippingCharge; // free ship ON → charge customer diabaikan (0 tambahan)
+  const cogs = round2(cogsUnit + shippingCost);
+  const regularPackage = round2(num(x.regular) + added);
+  const sellingPackage = round2(num(x.selling) + added);
   const grossProfit = round2(sellingPackage - cogs);
   const grossMargin = sellingPackage ? grossProfit / sellingPackage : 0;
   const discountAmount = round2(regularPackage - sellingPackage);
   const discountRate = regularPackage ? discountAmount / regularPackage : 0;
-  return {shippingFee, cogsUnit, pieces, U, cogs, regularPackage, sellingPackage, grossProfit, grossMargin, discountAmount, discountRate};
+  return {shippingCost, shippingCharge, cogsUnit, pieces, cogs, regularPackage, sellingPackage, grossProfit, grossMargin, discountAmount, discountRate};
 }
 
 function esc(s){
@@ -131,6 +136,27 @@ function skuCell(p,i){
   return h;
 }
 
+function shippingCell(p,i){
+  normalizePackage(p);
+  const off = !!p.freeShip;
+  const tipCost = "Shipping Cost — kos seller dgn courier. Sentiasa dalam COGS (per order).";
+  const tipCharge = "Shipping Charge — amaun dicaj pada customer. Ditambah pada Regular/Selling Price HANYA bila Free Shipping OFF.";
+  return `<div class="ship-cell">
+    <div class="ship-field">
+      <span class="ship-mini" title="${tipCost}">Cost seller</span>
+      <div class="unit"><b>RM</b>${inputCell(i,"shippingCost",p.shippingCost)}</div>
+    </div>
+    <div class="ship-field${off ? " dim" : ""}">
+      <span class="ship-mini" title="${tipCharge}">Charge customer</span>
+      <div class="unit"><b>RM</b><input data-i="${i}" data-k="shippingCharge" data-numeric="1" inputmode="decimal" type="text" value="${formatNumberInput(p.shippingCharge)}"${off ? " disabled" : ""}></div>
+    </div>
+    <div class="ship-free">
+      <span class="ship-mini">Free Shipping</span>
+      <label class="switch"><input type="checkbox" data-i="${i}" data-free-ship="1"${off ? " checked" : ""}><span></span></label>
+    </div>
+  </div>`;
+}
+
 function renderTable(){
   const cols = S.packages.length;
   let html = `<thead><tr><th>PACKAGE</th>`;
@@ -138,14 +164,12 @@ function renderTable(){
     html += `<th><div class="package-title">${esc(p.name || `Package ${i+1}`)}</div>${cols>1 ? `<button class="remove" data-remove="${i}">Remove</button>` : ""}</th>`;
   });
   html += `</tr></thead><tbody>`;
-  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="input-title"><b>INPUT</b><span>SKU qty × cost membina kos 1 pakej. Regular/Selling Price di bawah adalah harga PER PAKEJ.</span></div></td></tr>`;
+  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="input-title"><b>INPUT</b><span>SKU qty × cost membina kos produk. Shipping: Cost seller sentiasa dalam COGS; Charge customer ditambah pada harga bila Free Shipping OFF. Regular/Selling Price = per pakej (1 order).</span></div></td></tr>`;
 
   const inputRows = [
     ["Package Name",(i,p)=>`<input data-i="${i}" data-k="name" value="${esc(p.name)}">`],
     ["SKUs in Package",(i,p)=>skuCell(p,i)],
-    ["Shipping Fee",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"shippingFee",p.shippingFee)}</div>`],
-    ["Free Shipping",(i,p)=>`<div class="toggle-cell"><label class="switch"><input type="checkbox" data-i="${i}" data-free-ship="1" ${p.freeShip?"checked":""}><span></span></label></div>`],
-    ["Units per Order (U)",(i,p)=>inputCell(i,"unitsPerOrder",p.unitsPerOrder)],
+    ["Shipping",(i,p)=>shippingCell(p,i)],
     ["Regular Price",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"regular",p.regular)}</div>`],
     ["Selling Price",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"selling",p.selling)}</div>`]
   ];
@@ -153,11 +177,11 @@ function renderTable(){
     html += `<tr><td class="row-label">${label}</td>${S.packages.map((p,i)=>`<td>${fn(i,p)}</td>`).join("")}</tr>`;
   });
 
-  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="output-title"><b>OUTPUT</b><span>Semua angka di bawah adalah PER ORDER (U × pakej; shipping sekali per order).</span></div></td></tr>`;
+  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="output-title"><b>OUTPUT</b><span>Semua angka di bawah adalah PER ORDER (1 pakej = 1 order; shipping sekali per order).</span></div></td></tr>`;
   const outputs = [
-    ["COGS",c=>money(c.cogs),"cell-value","(Σ SKU qty × cost) × U + Shipping Fee. Shipping sentiasa dalam COGS."],
-    ["Regular Price",c=>money(c.regularPackage),"cell-value","U × Regular Price + Shipping Fee (shipping dicaj hanya bila Free Shipping OFF)"],
-    ["Selling Price",c=>money(c.sellingPackage),"good","U × Selling Price + Shipping Fee (shipping dicaj hanya bila Free Shipping OFF). AOV = Selling Price per order ini"],
+    ["COGS",c=>money(c.cogs),"cell-value","(Σ SKU qty × cost) + Shipping Cost. Shipping Cost (kos seller) sentiasa dalam COGS."],
+    ["Regular Price",c=>money(c.regularPackage),"cell-value","Regular Price + Shipping Charge — cuma bila Free Shipping OFF (0 tambahan bila ON)."],
+    ["Selling Price",c=>money(c.sellingPackage),"good","Selling Price + Shipping Charge — cuma bila Free Shipping OFF (0 tambahan bila ON). AOV = Selling Price per order ini"],
     ["Discount Amount",c=>money(c.discountAmount),"discount","Regular Price − Selling Price (per order)"],
     ["Discount Rate",c=>(c.discountRate*100).toFixed(2)+"%","discount","Discount Amount ÷ Regular Price"],
     ["Gross Profit",c=>money(c.grossProfit),"good","Selling Price − COGS (per order)"],
@@ -278,12 +302,6 @@ $("packageTable").addEventListener("input",e=>{
   }
   const k = t.dataset.k;
   if(k === "name"){ pkg.name = t.value; return; }
-  if(k === "unitsPerOrder"){
-    formatLiveNumber(t);
-    pkg.unitsPerOrder = Math.max(1, Math.floor(parseInputValue(t.value)));
-    updateProfitability();
-    return;
-  }
   formatLiveNumber(t);
   pkg[k] = parseInputValue(t.value);
   updateProfitability();
@@ -296,7 +314,7 @@ $("packageTable").addEventListener("change",e=>{
   if(!pkg) return;
   if(t.dataset.freeShip !== undefined){
     pkg.freeShip = t.checked;
-    updateProfitability();
+    renderTable(); // re-render: charge input di-disable+dim bila Free Shipping ON, output dikira semula
     return;
   }
   const si = t.dataset.sku;
@@ -311,8 +329,7 @@ $("packageTable").addEventListener("change",e=>{
   }
   const k = t.dataset.k;
   if(k === "name"){ pkg.name = t.value; renderTable(); return; }
-  if(k === "unitsPerOrder") pkg.unitsPerOrder = Math.max(1, Math.floor(parseInputValue(t.value)));
-  else pkg[k] = parseInputValue(t.value);
+  pkg[k] = parseInputValue(t.value);
   renderTable();
 });
 
