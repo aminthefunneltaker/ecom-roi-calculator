@@ -116,25 +116,16 @@ thead th:first-child{width:172px;text-align:left;color:var(--faint);font-size:10
 .input-title b,.output-title b{font-size:10.5px;font-weight:850;letter-spacing:.12em;color:var(--accent-ink);text-transform:uppercase}
 .input-title>span,.output-title>span{font-size:11.5px;color:var(--muted);font-weight:500}
 
-/* JS table tooltip (info-dot) */
+/* table info-dot (icon sahaja). Popup CSS gelap dibuang — guna native title tooltip (Amin, 2026-09-06). */
 .info-dot{
   display:inline-grid;place-items:center;width:17px;height:17px;margin-left:7px;flex:0 0 auto;
   border:1px solid var(--line);border-radius:50%;font-size:10px;font-weight:800;color:var(--faint);
   background:#fff;cursor:help;vertical-align:middle;position:relative;outline:none;transition:all .15s ease;
 }
 .info-dot:hover{border-color:var(--accent);color:var(--accent)}
-.info-dot:hover::after,.info-dot:focus::after{
-  content:attr(title);position:absolute;left:0;bottom:calc(100% + 9px);z-index:60;width:max-content;max-width:250px;
-  padding:9px 11px;border-radius:9px;background:#0f172a;color:#fff;font-size:11px;font-weight:500;line-height:1.45;
-  text-align:left;white-space:normal;box-shadow:0 8px 22px rgba(15,23,42,.22);
-}
-.info-dot:hover::before,.info-dot:focus::before{
-  content:"";position:absolute;left:8px;bottom:calc(100% + 3px);z-index:61;
-  border:5px solid transparent;border-top-color:#0f172a;
-}
-.row-label .info-dot{margin-left:8px}
-.row-label .info-dot:hover::after,.row-label .info-dot:focus::after{left:auto;right:0}
-.row-label .info-dot:hover::before,.row-label .info-dot:focus::before{left:auto;right:7px}
+/* Row output: ikon info duduk di hujung kanan kotak (row-label), bukan hujung wording. */
+.row-label.row-label-dot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.row-label.row-label-dot .info-dot{margin-left:0}
 
 /* output cells */
 .cell-value{font-weight:800;color:var(--text);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;font-size:13.5px}

@@ -164,7 +164,7 @@ function renderTable(){
     ["Gross Margin",c=>(c.grossMargin*100).toFixed(2)+"%","good","Gross Profit ÷ Selling Price"]
   ];
   outputs.forEach(([label,fn,cl,formula]) => {
-    html += `<tr><td class="row-label"><span>${label}</span><span class="info-dot" tabindex="0" title="${formula}" aria-label="Formula: ${formula}">i</span></td>${S.packages.map(p=>`<td class="${cl} cell-value">${fn(calcPackage(p))}</td>`).join("")}</tr>`;
+    html += `<tr><td class="row-label row-label-dot"><span>${label}</span><span class="info-dot" tabindex="0" title="${formula}" aria-label="Formula: ${formula}">i</span></td>${S.packages.map(p=>`<td class="${cl} cell-value">${fn(calcPackage(p))}</td>`).join("")}</tr>`;
   });
   html += `</tbody>`;
   $("packageTable").innerHTML = html;
