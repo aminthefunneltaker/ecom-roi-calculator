@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=t8">
+<link rel="stylesheet" href="style.css?v=t9">
 </head>
 <body>
 <main class="app">
@@ -45,12 +45,18 @@
     <div class="section-head">
       <div class="head-title">
         <span class="step">01</span>
-        <div><h2>Package Economics</h2><p class="hint">Compare packages side by side.</p></div>
+        <div><h2>Package Economics</h2><p class="hint">Edit one package at a time — compare all read-only below.</p></div>
       </div>
       <button id="addPackage" class="primary-btn">+ Add Package</button>
     </div>
-    <div class="table-wrap">
-      <table id="packageTable"></table>
+    <div id="pkgStrip" class="pkg-strip-zone"></div>
+    <div id="pkgEditor" class="pkg-editor"></div>
+    <div class="compare-block">
+      <div class="compare-t">
+        <div class="compare-tl"><span class="hint-chip">Output</span><h3>Compare all packages</h3></div>
+        <span class="hint">Read-only · side by side · scrolls when wide</span>
+      </div>
+      <div id="pkgCompare"></div>
     </div>
   </section>
 
@@ -220,7 +226,7 @@
   <footer>Dibangunkan oleh Funnel Taker Marketing</footer>
 </main>
 <div id="printArea" aria-hidden="true"></div>
-<script src="script.js?v=8727423"></script>
+<script src="script.js?v=t9"></script>
 <script src="script-pdf.js?v=t8"></script>
 <script>
 /* Theme toggle: flips html[data-theme] and persists to localStorage.

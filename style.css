@@ -691,3 +691,110 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding-top:24px}
   .split-value b{font-size:12.5px}
   .split-value{grid-template-columns:1fr}
 }
+
+/* ============================================================
+   SECTION 01 (Package Economics) REDESIGN — single-package editor
+   + read-only all-package compare. (Zack, 2026-09-07 T9)
+   Visual/layout only; calculation logic untouched. Appended so it
+   cannot disturb earlier rules. Uses the app's theme tokens.
+   ============================================================ */
+
+/* ---- package pill / tab strip ---- */
+.pkg-pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.pkg-pill{
+  display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  padding:9px 13px;min-width:118px;max-width:210px;
+  border:1px solid var(--line);border-radius:12px;background:var(--card);
+  cursor:pointer;text-align:left;font-family:var(--font-body);box-shadow:var(--shadow-sm);
+  -webkit-tap-highlight-color:transparent;
+  transition:border-color .15s ease,background .15s ease,box-shadow .15s ease,transform .1s ease;
+}
+.pkg-pill:hover{border-color:var(--accent-line)}
+.pkg-pill:active{transform:translateY(1px)}
+.pkg-pill.active{
+  background:linear-gradient(180deg,var(--accent-soft),var(--tint-end));
+  border-color:var(--accent);box-shadow:0 8px 18px -10px var(--accent-shadow);
+}
+.pp-name{display:flex;align-items:center;gap:6px;width:100%;min-width:0}
+.pp-nm{font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:-.01em;
+  color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0}
+.pkg-pill.active .pp-nm{color:var(--accent-ink)}
+.pp-star{flex:0 0 auto;color:var(--accent);font-size:11px;line-height:1}
+.pp-gp{font-size:10px;font-weight:800;letter-spacing:.03em;color:var(--muted);font-variant-numeric:tabular-nums}
+.pkg-pill.active .pp-gp{color:var(--accent-ink)}
+
+/* ---- single-package editor ---- */
+.pkg-editor{border:1px solid var(--line);border-radius:var(--r-md);background:var(--card);padding:18px 20px;box-shadow:var(--shadow-sm)}
+.pkg-none,.pkg-empty{color:var(--muted);font-size:12.5px;padding:6px 0}
+.editor-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.editor-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.editor-sub{font-size:11.5px;color:var(--muted)}
+.editor-actions{display:flex;gap:8px;flex-wrap:wrap}
+.ghost-btn{
+  border:1px solid var(--line);background:var(--field);color:var(--text);border-radius:9px;
+  padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);
+  transition:all .15s ease;white-space:nowrap;
+}
+.ghost-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.ghost-btn.danger{color:var(--bad);border-color:var(--line)}
+.ghost-btn.danger:hover{border-color:var(--bad);color:var(--bad);background:var(--bad-soft)}
+.editor-grid{display:grid;gap:12px}
+.e-card{
+  border:1px solid var(--line);border-radius:var(--r-md);background:var(--card);
+  padding:15px 16px;display:flex;flex-direction:column;gap:11px;
+}
+.e-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.e-card-head .add-sku{width:auto;margin-top:0;padding:7px 15px}
+.e-label{
+  font-family:var(--font-display);font-size:11.5px;font-weight:800;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--accent-ink);
+}
+.e-label .e-subh{display:inline;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11px;font-weight:600;font-family:var(--font-body)}
+.e-card .unit{margin-top:0}
+.e-2col,.e-ship-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.e-sub{font-size:12px;font-weight:700;color:var(--text);display:flex;flex-direction:column;gap:6px;min-width:0}
+.e-sub .unit{height:44px}
+.e-sub.dim{opacity:.55}
+.e-note{color:var(--faint);font-size:11px;line-height:1.4;margin:0;font-weight:500}
+.e-free{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 13px;border:1px dashed var(--line);border-radius:var(--r-sm);
+  background:var(--field);font-size:12.5px;font-weight:700;color:var(--text);align-self:end;width:100%;
+}
+.e-free .switch{transform:scale(.94);transform-origin:right center}
+
+/* SKU editor rows (roomy, one package only) */
+.esku-list{margin-top:2px}
+.esku-row{display:grid;grid-template-columns:minmax(130px,1fr) auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line-2)}
+.esku-row:last-child{border-bottom:0;padding-bottom:2px}
+.esku-name{height:40px}
+.esku-meta{display:grid;grid-template-columns:82px 132px 30px;gap:8px;align-items:center}
+.esku-meta .unit{height:40px;border-radius:9px}
+.esku-meta .unit input{font-size:12.5px}
+.esku-del{justify-self:center;width:26px;height:26px}
+.esku-del-empty{width:26px}
+
+/* ---- read-only compare matrix ---- */
+.compare-block{margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}
+.compare-t{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:13px}
+.compare-tl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.compare-tl h3{font-family:var(--font-display);font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--ink);margin:0}
+.cmp-star{color:var(--accent);font-size:11px;display:inline-block;margin-right:3px}
+.pkg-cmp-wrap table.pkg-cmp{min-width:640px;width:100%;table-layout:fixed}
+.pkg-cmp thead th{text-align:center}
+.pkg-cmp .package-title{margin-top:2px}
+
+/* editor responsive */
+@media(max-width:760px){
+  .e-2col,.e-ship-grid{grid-template-columns:1fr}
+  .e-free{justify-self:stretch}
+}
+@media(max-width:640px){
+  .pkg-editor{padding:14px 13px;border-radius:14px}
+  .editor-head{margin-bottom:13px}
+}
+@media(max-width:520px){
+  .esku-row{grid-template-columns:1fr;gap:7px;padding:9px 0}
+  .esku-meta{grid-template-columns:76px minmax(0,1fr) 30px}
+}
+

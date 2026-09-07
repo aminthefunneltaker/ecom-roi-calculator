@@ -116,86 +116,268 @@ function esc(s){
   return String(s).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
 }
 
-function inputCell(i,k,value){
-  return `<input data-i="${i}" data-k="${k}" data-numeric="1" inputmode="decimal" type="text" value="${formatNumberInput(value)}">`;
+function pkgName(p,i){
+  return (p && String(p.name||"").trim()) ? String(p.name) : `Package ${i+1}`;
 }
 
-function skuCell(p,i){
-  normalizePackage(p);
-  const canRemove = p.skus.length > 1;
-  let h = `<div class="sku-head"><span>Name</span><span>Qty</span><span>Cost/unit</span><span></span></div>`;
-  p.skus.forEach((s,si) => {
-    h += `<div class="sku-item">
-      <input data-i="${i}" data-sku="${si}" data-k="name" value="${esc(s.name ?? "")}" placeholder="SKU name (optional)">
-      <input data-i="${i}" data-sku="${si}" data-k="qty" data-numeric="1" inputmode="decimal" type="text" value="${formatNumberInput(s.qty)}">
-      <div class="unit sku-unit"><b>RM</b><input data-i="${i}" data-sku="${si}" data-k="productCost" data-numeric="1" inputmode="decimal" type="text" value="${formatNumberInput(s.productCost)}"></div>
-      ${canRemove ? `<button class="remove-sku" data-i="${i}" data-del-sku="${si}" title="Remove SKU">✕</button>` : "<span></span>"}
+/* ============================================================
+   SECTION 01 (Package Economics) — single-package editor + live
+   read-only ALL-package compare matrix. (Zack, 2026-09-07 T9)
+   Layout-only redesign. The model + calcPackage + every consumer
+   (Section 02 profit cards, Section 03 targets, Current
+   Performance, primary package) is UNCHANGED — we only change how
+   package inputs are edited & how outputs are displayed.
+   ============================================================ */
+
+let active = 0;           // index of the package currently open in the editor
+
+function clampIdx(v){ return Math.max(0, Math.min(v, S.packages.length-1)); }
+
+// #primaryPackage (Section 02) options — refreshed whenever names/count change.
+function syncPrimarySelect(){
+  const el = $("primaryPackage");
+  if(!el) return;
+  el.innerHTML = S.packages.map((p,i)=>`<option value="${i}" ${i===S.primary?"selected":""}>${esc(pkgName(p,i))}</option>`).join("");
+}
+
+// pill / tab strip — one per package (name + gross profit). Active = in editor.
+function renderPkgStrip(){
+  const wrap = $("pkgStrip");
+  if(!wrap) return;
+  let h = "";
+  if(S.packages.length){
+    h = '<div class="pkg-pills" role="tablist" aria-label="Select a package to edit">';
+    S.packages.forEach((p,i)=>{
+      const c = calcPackage(p);
+      const on = i===active;
+      const prim = i===S.primary;
+      h += `<button type="button" role="tab" aria-selected="${on}" class="pkg-pill${on?" active":""}" data-pill="${i}" title="${prim ? "Primary package — drives Section 02." : "Open this package in the editor."}">
+        <span class="pp-name"><span class="pp-nm">${esc(pkgName(p,i))}</span>${prim?'<span class="pp-star">★</span>':""}</span>
+        <span class="pp-gp">GP ${money(c.grossProfit)}</span>
+      </button>`;
+    });
+    h += "</div>";
+  }
+  wrap.innerHTML = h;
+}
+
+// read-only comparison of ALL packages (drives no state — display only)
+const OUTPUT_ROWS = [
+  ["COGS",        c=>money(c.cogs),                        "cell-value", "(Σ SKU qty × cost) + Shipping Cost. Shipping Cost (kos seller) sentiasa dalam COGS."],
+  ["Regular Price",c=>money(c.regularPackage),             "cell-value", "Regular Price + Shipping Charge — cuma bila Free Shipping OFF (0 tambahan bila ON)."],
+  ["Selling Price",c=>money(c.sellingPackage),             "good",       "Selling Price + Shipping Charge — cuma bila Free Shipping OFF (0 tambahan bila ON). AOV = Selling Price per order ini"],
+  ["Discount Amount",c=>money(c.discountAmount),           "discount",   "Regular Price − Selling Price (per order)"],
+  ["Discount Rate", c=>(c.discountRate*100).toFixed(2)+"%","discount",  "Discount Amount ÷ Regular Price"],
+  ["Gross Profit", c=>money(c.grossProfit),                "good",       "Selling Price − COGS (per order)"],
+  ["Gross Margin", c=>(c.grossMargin*100).toFixed(2)+"%",  "good",       "Gross Profit ÷ Selling Price"]
+];
+function renderCompare(){
+  const wrap = $("pkgCompare");
+  if(!wrap) return;
+  if(!S.packages.length){
+    wrap.innerHTML = '<div class="pkg-empty">No packages yet.</div>';
+    return;
+  }
+  let h = '<div class="table-wrap pkg-cmp-wrap"><table class="pkg-cmp"><thead><tr><th>METRIC</th>';
+  S.packages.forEach((p,i)=>{
+    h += `<th>${i===S.primary?'<span class="cmp-star" title="Primary package — drives Section 02">★</span>':""}<div class="package-title">${esc(pkgName(p,i))}</div></th>`;
+  });
+  h += "</tr></thead><tbody>";
+  OUTPUT_ROWS.forEach(([label,fn,cl,formula])=>{
+    h += `<tr><td class="row-label row-label-dot"><span>${label}</span><span class="info-dot" tabindex="0" title="${esc(formula)}" aria-label="${esc(label)}, formula">i</span></td>`;
+    S.packages.forEach(p=>{ const c=calcPackage(p); h += `<td class="${cl} cell-value">${fn(c)}</td>`; });
+    h += "</tr>";
+  });
+  h += "</tbody></table></div>";
+  wrap.innerHTML = h;
+}
+
+// --- active-package editor form ---------------------------------
+function skuEditorRows(p){
+  const canRemove = p.skus.length>1;
+  let h = "";
+  p.skus.forEach((s,si)=>{
+    const del = canRemove
+      ? `<button type="button" class="esku-del remove-sku" data-act="delsku" data-sku="${si}" title="Remove SKU">✕</button>`
+      : `<span class="esku-del-empty" aria-hidden="true"></span>`;
+    h += `<div class="esku-row">
+      <input class="esku-name" type="text" data-sku="${si}" data-k="name" value="${esc(s.name??"")}" placeholder="SKU name (optional)">
+      <div class="esku-meta">
+        <div class="unit"><b>Qty</b><input type="text" data-numeric="1" inputmode="decimal" data-sku="${si}" data-k="qty" value="${formatNumberInput(s.qty)}"></div>
+        <div class="unit"><b>RM</b><input type="text" data-numeric="1" inputmode="decimal" data-sku="${si}" data-k="productCost" value="${formatNumberInput(s.productCost)}"></div>
+        ${del}
+      </div>
     </div>`;
   });
-  h += `<button class="add-sku" data-add-sku="${i}">+ Add SKU</button>`;
   return h;
 }
 
-function shippingCell(p,i){
+function renderEditor(){
+  const el = $("pkgEditor");
+  if(!el) return;
+  if(!S.packages.length){
+    el.innerHTML = '<div class="pkg-none">No packages yet — click “+ Add Package”.</div>';
+    return;
+  }
+  const i = active, p = S.packages[i];
   normalizePackage(p);
   const off = !!p.freeShip;
-  const tipCost = "Shipping Cost — kos seller dgn courier. Sentiasa dalam COGS (per order).";
-  const tipCharge = "Shipping Charge — amaun dicaj pada customer. Ditambah pada Regular/Selling Price HANYA bila Free Shipping OFF.";
-  return `<div class="ship-cell">
-    <div class="ship-field">
-      <span class="ship-mini" title="${tipCost}">Cost seller</span>
-      <div class="unit"><b>RM</b>${inputCell(i,"shippingCost",p.shippingCost)}</div>
+  const canRemove = S.packages.length>1;
+  el.innerHTML = `
+    <div class="editor-head">
+      <div class="editor-title">
+        <span class="hint-chip">Package ${i+1} of ${S.packages.length}</span>
+        <span class="editor-sub">${i===S.primary ? "Primary — drives Section 02 · edit here" : "Editing one package at a time — all compared below"}</span>
+      </div>
+      <div class="editor-actions">
+        <button type="button" class="ghost-btn" data-act="dup" title="Duplicate this package">⧉ Duplicate</button>
+        ${canRemove ? `<button type="button" class="ghost-btn danger" data-act="del" title="Remove this package">Remove</button>` : ""}
+      </div>
     </div>
-    <div class="ship-field${off ? " dim" : ""}">
-      <span class="ship-mini" title="${tipCharge}">Charge customer</span>
-      <div class="unit"><b>RM</b><input data-i="${i}" data-k="shippingCharge" data-numeric="1" inputmode="decimal" type="text" value="${formatNumberInput(p.shippingCharge)}"${off ? " disabled" : ""}></div>
-    </div>
-    <div class="ship-free">
-      <span class="ship-mini">Free Shipping</span>
-      <label class="switch"><input type="checkbox" data-i="${i}" data-free-ship="1"${off ? " checked" : ""}><span></span></label>
-    </div>
-  </div>`;
+    <div class="editor-grid">
+      <label class="e-card e-name">
+        <span class="e-label">Package Name</span>
+        <input type="text" data-k="name" value="${esc(p.name??"")}" placeholder="e.g. Starter 3-in-1">
+      </label>
+
+      <div class="e-card">
+        <span class="e-label">Pricing <em class="e-subh">per order · 1 package = 1 order</em></span>
+        <div class="e-2col">
+          <label class="e-sub">Regular Price
+            <div class="unit"><b>RM</b><input type="text" data-numeric="1" inputmode="decimal" data-k="regular" value="${formatNumberInput(p.regular)}"></div></label>
+          <label class="e-sub">Selling Price
+            <div class="unit"><b>RM</b><input type="text" data-numeric="1" inputmode="decimal" data-k="selling" value="${formatNumberInput(p.selling)}"></div></label>
+        </div>
+      </div>
+
+      <div class="e-card">
+        <span class="e-label">Shipping <em class="e-subh">once per order</em></span>
+        <div class="e-ship-grid">
+          <label class="e-sub">Cost — seller
+            <div class="unit"><b>RM</b><input type="text" data-numeric="1" inputmode="decimal" data-k="shippingCost" value="${formatNumberInput(p.shippingCost)}"></div>
+            <small class="e-note">Always in COGS.</small></label>
+          <label class="e-sub${off?" dim":""}">Charge — customer
+            <div class="unit"><b>RM</b><input type="text" data-numeric="1" inputmode="decimal" data-k="shippingCharge" value="${formatNumberInput(p.shippingCharge)}"${off?" disabled":""}></div>
+            <small class="e-note">Added to price when Free Shipping OFF.</small></label>
+          <div class="e-free"><span>Free Shipping</span>
+            <label class="switch"><input type="checkbox" data-free-ship="1"${off?" checked":""}><span></span></label></div>
+        </div>
+      </div>
+
+      <div class="e-card">
+        <div class="e-card-head"><span class="e-label">SKUs in Package</span>
+          <button type="button" class="add-sku" data-act="addsku">+ Add SKU</button></div>
+        <div class="esku-list">${skuEditorRows(p)}</div>
+        <small class="e-note">COGS = Σ (qty × cost/unit) + seller shipping cost.</small>
+      </div>
+    </div>`;
 }
 
-function renderTable(){
-  const cols = S.packages.length;
-  let html = `<thead><tr><th>PACKAGE</th>`;
-  S.packages.forEach((p,i) => {
-    html += `<th><div class="package-title">${esc(p.name || `Package ${i+1}`)}</div>${cols>1 ? `<button class="remove" data-remove="${i}">Remove</button>` : ""}</th>`;
-  });
-  html += `</tr></thead><tbody>`;
-  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="input-title"><b>INPUT</b><span>SKU, shipping &amp; prices — per order</span><span class="info-dot sec-tip" tabindex="0" title="COGS = (Σ SKU qty × cost) + seller shipping cost. Seller shipping is always in COGS. Customer shipping charge is added to price only when Free Shipping is OFF. Prices are per package (1 order).">i</span></div></td></tr>`;
-
-  const inputRows = [
-    ["Package Name",(i,p)=>`<input data-i="${i}" data-k="name" value="${esc(p.name)}">`],
-    ["SKUs in Package",(i,p)=>skuCell(p,i)],
-    ["Shipping",(i,p)=>shippingCell(p,i)],
-    ["Regular Price",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"regular",p.regular)}</div>`],
-    ["Selling Price",(i,p)=>`<div class="unit"><b>RM</b>${inputCell(i,"selling",p.selling)}</div>`]
-  ];
-  inputRows.forEach(([label,fn]) => {
-    html += `<tr><td class="row-label">${label}</td>${S.packages.map((p,i)=>`<td>${fn(i,p)}</td>`).join("")}</tr>`;
-  });
-
-  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="output-title"><b>OUTPUT</b><span>All figures are per order</span><span class="info-dot sec-tip" tabindex="0" title="1 package = 1 order. Shipping is charged once per order.">i</span></div></td></tr>`;
-  const outputs = [
-    ["COGS",c=>money(c.cogs),"cell-value","(Σ SKU qty × cost) + Shipping Cost. Shipping Cost (kos seller) sentiasa dalam COGS."],
-    ["Regular Price",c=>money(c.regularPackage),"cell-value","Regular Price + Shipping Charge — cuma bila Free Shipping OFF (0 tambahan bila ON)."],
-    ["Selling Price",c=>money(c.sellingPackage),"good","Selling Price + Shipping Charge — cuma bila Free Shipping OFF (0 tambahan bila ON). AOV = Selling Price per order ini"],
-    ["Discount Amount",c=>money(c.discountAmount),"discount","Regular Price − Selling Price (per order)"],
-    ["Discount Rate",c=>(c.discountRate*100).toFixed(2)+"%","discount","Discount Amount ÷ Regular Price"],
-    ["Gross Profit",c=>money(c.grossProfit),"good","Selling Price − COGS (per order)"],
-    ["Gross Margin",c=>(c.grossMargin*100).toFixed(2)+"%","good","Gross Profit ÷ Selling Price"]
-  ];
-  outputs.forEach(([label,fn,cl,formula]) => {
-    html += `<tr><td class="row-label row-label-dot"><span>${label}</span><span class="info-dot" tabindex="0" title="${formula}" aria-label="${label}, formula">i</span></td>${S.packages.map(p=>`<td class="${cl} cell-value">${fn(calcPackage(p))}</td>`).join("")}</tr>`;
-  });
-  html += `</tbody>`;
-  $("packageTable").innerHTML = html;
-  $("primaryPackage").innerHTML = S.packages.map((p,i)=>`<option value="${i}" ${i===S.primary?"selected":""}>${esc(p.name||`Package ${i+1}`)}</option>`).join("");
+// Cheap refresh of every READ-ONLY surface after a value changes.
+// Does NOT rebuild editor inputs (so the field being typed into keeps focus).
+function refreshReadonly(){
+  renderPkgStrip();
+  renderCompare();
+  syncPrimarySelect();
   updateProfitability();
 }
 
+// Full rebuild after a structural change (add / remove / duplicate / switch pill).
+function syncAll(){
+  renderPkgStrip();
+  renderEditor();
+  renderCompare();
+  syncPrimarySelect();
+  renderCurrentPackageTable();
+  updateCurrentPerformance();
+  updateProfitability();
+}
+
+function clonePackage(src){
+  normalizePackage(src);
+  return {...src, name:src.name, skus:src.skus.map(s=>({...s})), currentOrders:0};
+}
+
+/* ---------- Section 01 event wiring (delegated once) ---------- */
+$("pkgStrip").addEventListener("click", e=>{
+  const b = e.target.closest("[data-pill]");
+  if(!b) return;
+  const ni = Number(b.dataset.pill);
+  if(ni===active) return;
+  active = ni;
+  renderEditor();
+  renderPkgStrip();
+});
+
+$("pkgEditor").addEventListener("input", e=>{
+  const t = e.target, pkg = S.packages[active];
+  if(!pkg) return;
+  const si = t.dataset.sku;
+  if(si !== undefined){
+    const sk = pkg.skus[Number(si)];
+    if(!sk) return;
+    const k = t.dataset.k;
+    if(k === "name"){ sk.name = t.value; return; }
+    formatLiveNumber(t);
+    sk[k] = parseInputValue(t.value);
+    refreshReadonly();
+    return;
+  }
+  const k = t.dataset.k;
+  if(!k) return;
+  if(k === "name"){ pkg.name = t.value; renderPkgStrip(); renderCompare(); syncPrimarySelect(); return; }
+  formatLiveNumber(t);
+  pkg[k] = parseInputValue(t.value);
+  refreshReadonly();
+});
+
+$("pkgEditor").addEventListener("change", e=>{
+  const t = e.target, pkg = S.packages[active];
+  if(!pkg) return;
+  if(t.dataset.freeShip !== undefined){
+    pkg.freeShip = t.checked;
+    renderEditor();   // disable + dim the customer-charge input, recompute
+    refreshReadonly();
+  }
+});
+
+$("pkgEditor").addEventListener("click", e=>{
+  const t = e.target;
+  if(t.dataset.act === undefined) return;
+  const pkg = S.packages[active];
+  if(t.dataset.act === "addsku" && pkg){
+    normalizePackage(pkg).skus.push({name:"", qty:1, productCost:0});
+    renderEditor();
+    refreshReadonly();
+  }else if(t.dataset.act === "delsku" && pkg && pkg.skus.length>1){
+    const si = Number(t.dataset.sku);
+    pkg.skus.splice(si,1);
+    renderEditor();
+    refreshReadonly();
+  }else if(t.dataset.act === "dup" && pkg){
+    const copy = clonePackage(pkg);
+    copy.name = (pkgName(pkg,active).trim() + " (copy)");
+    S.packages.splice(active+1, 0, copy);
+    active = active+1;
+    syncAll();
+  }else if(t.dataset.act === "del" && pkg && S.packages.length>1){
+    S.packages.splice(active,1);
+    active = clampIdx(active);
+    S.primary = clampIdx(S.primary);
+    syncAll();
+  }
+});
+
+$("addPackage").onclick=()=>{
+  const src = normalizePackage(S.packages[S.packages.length-1]);
+  S.packages.push({...src, name:`Package ${S.packages.length+1}`, skus:src.skus.map(s=>({...s})), currentOrders:0});
+  active = S.packages.length-1;
+  syncAll();
+};
+
+/* ============================================================
+   SECTION 02 + 03 — profitability / targets (logic UNCHANGED)
+   ============================================================ */
 function updateProfitability(){
   const c = calcPackage(S.packages[S.primary]);
   const targetNet = c.grossProfit * pct(S.profitPct);
@@ -278,86 +460,7 @@ $("profitPresets").appendChild(customBtn);
 
 $("customProfit").addEventListener("input",e=>{ formatLiveNumber(e.target); S.profitPct=parseInputValue(e.target.value); updateProfitability(); });
 
-$("addPackage").onclick=()=>{
-  const src = normalizePackage(S.packages[S.packages.length-1]);
-  S.packages.push({...src, name:`Package ${S.packages.length+1}`, skus:src.skus.map(s=>({...s})), currentOrders:0});
-  renderTable();
-  renderCurrentPackageTable();
-  updateCurrentPerformance();
-};
-
-$("packageTable").addEventListener("input",e=>{
-  const t = e.target, i = t.dataset.i;
-  if(i === undefined || t.dataset.freeShip !== undefined) return;
-  const pkg = S.packages[Number(i)];
-  if(!pkg) return;
-  const si = t.dataset.sku;
-  if(si !== undefined){
-    const sk = pkg.skus[Number(si)];
-    if(!sk) return;
-    const k = t.dataset.k;
-    if(k === "name") sk.name = t.value;
-    else { formatLiveNumber(t); sk[k] = parseInputValue(t.value); }
-    updateProfitability();
-    return;
-  }
-  const k = t.dataset.k;
-  if(k === "name"){ pkg.name = t.value; return; }
-  formatLiveNumber(t);
-  pkg[k] = parseInputValue(t.value);
-  updateProfitability();
-});
-
-$("packageTable").addEventListener("change",e=>{
-  const t = e.target, i = t.dataset.i;
-  if(i === undefined) return;
-  const pkg = S.packages[Number(i)];
-  if(!pkg) return;
-  if(t.dataset.freeShip !== undefined){
-    pkg.freeShip = t.checked;
-    renderTable(); // re-render: charge input di-disable+dim bila Free Shipping ON, output dikira semula
-    return;
-  }
-  const si = t.dataset.sku;
-  if(si !== undefined){
-    const sk = pkg.skus[Number(si)];
-    if(!sk) return;
-    const k = t.dataset.k;
-    if(k === "name") sk.name = t.value;
-    else sk[k] = parseInputValue(t.value);
-    renderTable();
-    return;
-  }
-  const k = t.dataset.k;
-  if(k === "name"){ pkg.name = t.value; renderTable(); return; }
-  pkg[k] = parseInputValue(t.value);
-  renderTable();
-});
-
-$("packageTable").addEventListener("click",e=>{
-  const t = e.target;
-  if(t.dataset.remove !== undefined){
-    const i = Number(t.dataset.remove);
-    S.packages.splice(i,1);
-    S.primary = Math.min(S.primary, S.packages.length-1);
-    renderTable();
-    renderCurrentPackageTable();
-    updateCurrentPerformance();
-  }else if(t.dataset.addSku !== undefined){
-    const i = Number(t.dataset.addSku);
-    normalizePackage(S.packages[i]).skus.push({name:"", qty:1, productCost:0});
-    renderTable();
-  }else if(t.dataset.delSku !== undefined){
-    const i = Number(t.dataset.i), si = Number(t.dataset.delSku);
-    const pkg = S.packages[i];
-    if(pkg && pkg.skus.length > 1){
-      pkg.skus.splice(si,1);
-      renderTable();
-    }
-  }
-});
-
-$("primaryPackage").onchange=e=>{S.primary=Number(e.target.value);updateProfitability();};
+$("primaryPackage").onchange=e=>{S.primary=Number(e.target.value);updateProfitability();renderPkgStrip();renderCompare();};
 $("taxRate").addEventListener("input",e=>{formatLiveNumber(e.target);S.taxRate=parseInputValue(e.target.value);updateProfitability();});
 $("commissionEnabled").onchange=e=>{
   S.commissionEnabled = e.target.checked;
@@ -378,14 +481,20 @@ $("requiredNet").addEventListener("input",e=>{
   updateProfitability();
 });
 
+/* ============================================================
+   CURRENT PERFORMANCE tab (logic UNCHANGED)
+   ============================================================ */
 function renderCurrentPackageTable(){
   const cols = S.packages.length;
   let html = `<thead><tr><th>PACKAGE</th>`;
-  S.packages.forEach((p,i)=>{ html += `<th>${esc(p.name || `Package ${i+1}`)}</th>`; });
+  S.packages.forEach((p,i)=>{ html += `<th>${esc(pkgName(p,i))}</th>`; });
   html += `</tr></thead><tbody>`;
   html += `<tr><td class="row-label">Actual Orders</td>${S.packages.map((p,i)=>`<td>${inputCell(i,"currentOrders",p.currentOrders||0)}</td>`).join("")}</tr>`;
   html += `</tbody>`;
   $("currentPackageTable").innerHTML = html;
+}
+function inputCell(i,k,value){
+  return `<input data-i="${i}" data-k="${k}" data-numeric="1" inputmode="decimal" type="text" value="${formatNumberInput(value)}">`;
 }
 
 function updateCurrentPerformance(){
@@ -444,6 +553,4 @@ document.querySelectorAll(".tab").forEach(tab=>{
 });
 
 setProfit(20);
-renderTable();
-renderCurrentPackageTable();
-updateCurrentPerformance();
+syncAll();
