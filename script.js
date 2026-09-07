@@ -199,11 +199,12 @@ function renderTable(){
 function updateProfitability(){
   const c = calcPackage(S.packages[S.primary]);
   const targetNet = c.grossProfit * pct(S.profitPct);
-  const cppEx = c.grossProfit - targetNet;
-  const cppInc = cppEx * (1 + pct(S.taxRate));
+  const cppInc = c.grossProfit - targetNet;
+  const taxMultiplier = 1 + pct(S.taxRate);
+  const cppEx = taxMultiplier > 0 ? cppInc / taxMultiplier : cppInc;
   const roasEx = cppEx > 0 ? c.sellingPackage / cppEx : 0;
   const roasInc = cppInc > 0 ? c.sellingPackage / cppInc : 0;
-  const roi = cppEx > 0 ? targetNet / cppEx : 0;
+  const roi = cppInc > 0 ? targetNet / cppInc : 0;
 
   $("targetNetProfit").textContent = money(round2(targetNet));
   $("cppExTax").textContent = money(round2(cppEx));
