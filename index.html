@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Meta Ads Ecom Profit Calculator</title>
 <link rel="icon" href="data:,">
+<script>
+/* No-FOUC: apply saved theme before first paint. Default = light. */
+(function(){try{var t=localStorage.getItem('ecom-roi-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -13,6 +17,14 @@
 <body>
 <main class="app">
   <header class="hero">
+    <button id="themeToggle" class="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="Toggle dark mode">
+      <span class="tt-ico">
+        <svg class="tt-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="tt-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </span>
+      <span class="tt-label tt-lab-dark">Dark</span>
+      <span class="tt-label tt-lab-light">Light</span>
+    </button>
     <p class="eyebrow">E-commerce Tool</p>
     <h1>Meta Ads Profit Calculator</h1>
     <p class="sub">Per-order profit, CPP, ROAS &amp; targets — for e-commerce Meta Ads.</p>
@@ -23,6 +35,35 @@
   </header>
 
   <div id="mainTab" class="tab-panel active">
+  <section class="panel kpi-band">
+    <div class="band-head">
+      <span class="band-eyebrow">Profitability KPI</span>
+      <span class="hint">Live per-order summary from the sections below.</span>
+    </div>
+    <div class="profit-grid kpi-strip">
+      <article class="profit-card">
+        <small>Target Net Profit</small>
+        <span class="info" data-tip="Target Net Profit (per order) = Gross Profit per order × target profit %">i</span>
+        <strong id="targetNetProfit">RM0.00</strong>
+      </article>
+      <article class="profit-card">
+        <small>CPP</small>
+        <span class="info" data-tip="CPP Incl. Tax = Gross Profit − Target Net Profit. CPP Excl. Tax = CPP Incl. Tax ÷ (1 + tax rate)">i</span>
+        <div class="split-value"><span><b id="cppExTax">RM0.00</b><em>Excl. Tax</em></span><span><b id="cppIncTax">RM0.00</b><em>Incl. Tax</em></span></div>
+      </article>
+      <article class="profit-card">
+        <small>ROAS</small>
+        <span class="info" data-tip="ROAS = AOV ÷ CPP. Excl. Tax uses CPP Excl. Tax; Incl. Tax uses CPP Incl. Tax.">i</span>
+        <div class="split-value"><span><b id="roasExTax">—</b><em>Excl. Tax</em></span><span><b id="roasIncTax">—</b><em>Incl. Tax</em></span></div>
+      </article>
+      <article class="profit-card">
+        <small>ROI</small>
+        <span class="info" data-tip="ROI = Target Net Profit per order ÷ CPP Excl. Tax. Tax does not affect ROI.">i</span>
+        <strong id="roi">—</strong>
+      </article>
+    </div>
+  </section>
+
   <section class="panel">
     <div class="section-head">
       <div class="head-title">
@@ -63,35 +104,12 @@
     </div>
 
     <div class="profit-subsection">
-      <div class="subsection-title"><h3>Profitability</h3><span>Target net profit = % of gross profit</span></div>
+      <div class="subsection-title"><h3>Target Net Profit</h3><span>Target net profit = % of gross profit</span></div>
       <div id="profitPresets" class="presets"></div>
       <div id="customProfitWrap" class="custom hidden">
         <label>Custom Target Net Profit
           <div class="unit"><input id="customProfit" type="text" value="40" inputmode="decimal" data-format="number"><b>%</b></div>
         </label>
-      </div>
-
-      <div class="profit-grid">
-        <article class="profit-card">
-          <small>Target Net Profit</small>
-          <span class="info" data-tip="Target Net Profit (per order) = Gross Profit per order × target profit %">i</span>
-          <strong id="targetNetProfit">RM0.00</strong>
-        </article>
-        <article class="profit-card">
-          <small>CPP</small>
-          <span class="info" data-tip="CPP Incl. Tax = Gross Profit − Target Net Profit. CPP Excl. Tax = CPP Incl. Tax ÷ (1 + tax rate)">i</span>
-          <div class="split-value"><span><b id="cppExTax">RM0.00</b><em>Excl. Tax</em></span><span><b id="cppIncTax">RM0.00</b><em>Incl. Tax</em></span></div>
-        </article>
-        <article class="profit-card">
-          <small>ROAS</small>
-          <span class="info" data-tip="ROAS = AOV ÷ CPP. Excl. Tax uses CPP Excl. Tax; Incl. Tax uses CPP Incl. Tax.">i</span>
-          <div class="split-value"><span><b id="roasExTax">—</b><em>Excl. Tax</em></span><span><b id="roasIncTax">—</b><em>Incl. Tax</em></span></div>
-        </article>
-        <article class="profit-card">
-          <small>ROI</small>
-          <span class="info" data-tip="ROI = Target Net Profit per order ÷ CPP Excl. Tax. Tax does not affect ROI.">i</span>
-          <strong id="roi">—</strong>
-        </article>
       </div>
     </div>
   </section>
@@ -150,50 +168,72 @@
   </div>
 
   <div id="currentTab" class="tab-panel">
-    <section class="panel">
-      <div class="section-head">
-        <div class="head-title">
-          <span class="step">01</span>
-          <div><h2>Current Performance</h2><p class="hint">Actual ads spend &amp; orders.</p></div>
-        </div>
-      </div>
-      <div class="performance-input-grid">
-        <label for="currentAdsSpend">Ads Spend
-          <div class="unit"><b>RM</b><input id="currentAdsSpend" type="text" value="0" inputmode="decimal" data-format="number"></div>
-        </label>
-      </div>
-      <div class="current-packages">
-        <div class="subhead"><h3>Actual Orders by Package</h3><span>1 order = 1 package</span></div>
-        <div class="table-wrap"><table id="currentPackageTable"></table></div>
-      </div>
-    </section>
+  <section class="panel kpi-band">
+    <div class="band-head">
+      <span class="band-eyebrow">Performance KPI</span>
+      <span class="hint">Blended from the actual mix &amp; spend below.</span>
+    </div>
+    <div class="performance-results">
+      <article><small>Total Orders</small><strong id="currentOrders">0</strong></article>
+      <article><small>Blended AOV</small><strong id="currentAov">RM0.00</strong></article>
+      <article><small>Total Revenue</small><strong id="currentRevenue">RM0.00</strong></article>
+      <article><small>Total COGS</small><strong id="currentCogs">RM0.00</strong></article>
+      <article><small>Gross Profit</small><strong id="currentGrossProfit">RM0.00</strong></article>
+      <article><small>CPP</small><strong id="currentCpp">RM0.00</strong></article>
+      <article><small>ROAS</small><strong id="currentRoas">0.00x</strong></article>
+      <article><small>ROI</small><strong id="currentRoi">0.00x</strong></article>
+    </div>
+    <div class="net-result">
+      <small>Net Profit / Loss</small>
+      <strong id="currentNetProfit">RM0.00</strong>
+    </div>
+  </section>
 
-    <section class="panel">
-      <div class="section-head">
-        <div class="head-title">
-          <span class="step">02</span>
-          <div><h2>Current Performance Results</h2><p class="hint">Blended from actual mix &amp; spend.</p></div>
-        </div>
+  <section class="panel">
+    <div class="section-head">
+      <div class="head-title">
+        <span class="step">01</span>
+        <div><h2>Current Performance</h2><p class="hint">Actual ads spend &amp; orders.</p></div>
       </div>
-      <div class="performance-results">
-        <article><small>Total Orders</small><strong id="currentOrders">0</strong></article>
-        <article><small>Blended AOV</small><strong id="currentAov">RM0.00</strong></article>
-        <article><small>Total Revenue</small><strong id="currentRevenue">RM0.00</strong></article>
-        <article><small>Total COGS</small><strong id="currentCogs">RM0.00</strong></article>
-        <article><small>Gross Profit</small><strong id="currentGrossProfit">RM0.00</strong></article>
-        <article><small>CPP</small><strong id="currentCpp">RM0.00</strong></article>
-        <article><small>ROAS</small><strong id="currentRoas">0.00x</strong></article>
-        <article><small>ROI</small><strong id="currentRoi">0.00x</strong></article>
-      </div>
-      <div class="net-result">
-        <small>Net Profit / Loss</small>
-        <strong id="currentNetProfit">RM0.00</strong>
-      </div>
-    </section>
+    </div>
+    <div class="performance-input-grid">
+      <label for="currentAdsSpend">Ads Spend
+        <div class="unit"><b>RM</b><input id="currentAdsSpend" type="text" value="0" inputmode="decimal" data-format="number"></div>
+      </label>
+    </div>
+    <div class="current-packages">
+      <div class="subhead"><h3>Actual Orders by Package</h3><span>1 order = 1 package</span></div>
+      <div class="table-wrap"><table id="currentPackageTable"></table></div>
+    </div>
+  </section>
+
   </div>
 
   <footer>Dibangunkan oleh Funnel Taker Marketing</footer>
 </main>
 <script src="script.js"></script>
+<script>
+/* Theme toggle: flips html[data-theme] and persists to localStorage.
+   FOUC already prevented by the head script. Icon/label visibility is
+   CSS-driven off html[data-theme]. */
+(function(){
+  var root=document.documentElement;
+  var btn=document.getElementById('themeToggle');
+  if(!btn) return;
+  function sync(){
+    var dark=root.getAttribute('data-theme')==='dark';
+    btn.setAttribute('aria-checked', dark?'true':'false');
+  }
+  btn.addEventListener('click',function(){
+    var dark=root.getAttribute('data-theme')==='dark';
+    root.classList.add('theme-switch');        /* enables the fade transition */
+    if(dark){root.removeAttribute('data-theme');try{localStorage.setItem('ecom-roi-theme','light');}catch(e){}}
+    else{root.setAttribute('data-theme','dark');try{localStorage.setItem('ecom-roi-theme','dark');}catch(e){}}
+    sync();
+    setTimeout(function(){root.classList.remove('theme-switch');},260);
+  });
+  sync();
+})();
+</script>
 </body>
 </html>
