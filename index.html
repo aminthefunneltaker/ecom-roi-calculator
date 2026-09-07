@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Meta Ads Ecom Profit Calculator</title>
 <link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,7 +15,7 @@
   <header class="hero">
     <p class="eyebrow">E-commerce Tool</p>
     <h1>Meta Ads Profit Calculator</h1>
-    <p class="sub">Per-order profit, CPP, ROAS &amp; targets — package-level clarity for e-commerce Meta Ads.</p>
+    <p class="sub">Per-order profit, CPP, ROAS &amp; targets — for e-commerce Meta Ads.</p>
     <nav class="tabs">
       <button class="tab active" data-tab="main">Profitability &amp; Target</button>
       <button class="tab" data-tab="current">Current Performance</button>
@@ -24,7 +27,7 @@
     <div class="section-head">
       <div class="head-title">
         <span class="step">01</span>
-        <div><h2>Package Economics</h2><p class="hint">Compare packages side by side. Every value below is per order.</p></div>
+        <div><h2>Package Economics</h2><p class="hint">Compare packages side by side.</p></div>
       </div>
       <button id="addPackage" class="primary-btn">+ Add Package</button>
     </div>
@@ -37,7 +40,7 @@
     <div class="section-head">
       <div class="head-title">
         <span class="step">02</span>
-        <div><h2>Meta Ads Profitability</h2><p class="hint">Tax rate &amp; target profit — CPP / ROAS / ROI are per order.</p></div>
+        <div><h2>Meta Ads Profitability</h2><p class="hint">CPP, ROAS &amp; ROI are per order.</p></div>
       </div>
     </div>
     <div class="settings-grid">
@@ -47,7 +50,7 @@
           <span class="hint-chip">AOV basis</span>
         </div>
         <select id="primaryPackage"></select>
-        <p class="field-note">AOV = revenue per order for the selected package.</p>
+        <p class="field-note">AOV = revenue per order.</p>
       </div>
       <div class="setting-card">
         <div class="setting-head">
@@ -60,7 +63,7 @@
     </div>
 
     <div class="profit-subsection">
-      <div class="subsection-title"><h3>Profitability</h3><span>Target net profit per order, as % of gross profit.</span></div>
+      <div class="subsection-title"><h3>Profitability</h3><span>Target net profit = % of gross profit</span></div>
       <div id="profitPresets" class="presets"></div>
       <div id="customProfitWrap" class="custom hidden">
         <label>Custom Target Net Profit
@@ -97,7 +100,7 @@
     <div class="section-head">
       <div class="head-title">
         <span class="step">03</span>
-        <div><h2>Client / Marketer Target</h2><p class="hint">Commission ON = auto target. OFF = manual Required Net Profit.</p></div>
+        <div><h2>Client / Marketer Target</h2><p class="hint">Commission ON = auto target · OFF = manual.</p></div>
       </div>
       <div class="toggle-label">
         <span>Commission</span>
@@ -151,7 +154,7 @@
       <div class="section-head">
         <div class="head-title">
           <span class="step">01</span>
-          <div><h2>Current Performance</h2><p class="hint">Actual ads spend + orders per package.</p></div>
+          <div><h2>Current Performance</h2><p class="hint">Actual ads spend &amp; orders.</p></div>
         </div>
       </div>
       <div class="performance-input-grid">
@@ -160,7 +163,7 @@
         </label>
       </div>
       <div class="current-packages">
-        <div class="subhead"><h3>Actual Orders by Package</h3><span>Actual orders received per package (1 order = 1 package).</span></div>
+        <div class="subhead"><h3>Actual Orders by Package</h3><span>1 order = 1 package</span></div>
         <div class="table-wrap"><table id="currentPackageTable"></table></div>
       </div>
     </section>
@@ -169,7 +172,7 @@
       <div class="section-head">
         <div class="head-title">
           <span class="step">02</span>
-          <div><h2>Current Performance Results</h2><p class="hint">Blended results from actual mix &amp; spend.</p></div>
+          <div><h2>Current Performance Results</h2><p class="hint">Blended from actual mix &amp; spend.</p></div>
         </div>
       </div>
       <div class="performance-results">

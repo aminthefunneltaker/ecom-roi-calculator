@@ -164,7 +164,7 @@ function renderTable(){
     html += `<th><div class="package-title">${esc(p.name || `Package ${i+1}`)}</div>${cols>1 ? `<button class="remove" data-remove="${i}">Remove</button>` : ""}</th>`;
   });
   html += `</tr></thead><tbody>`;
-  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="input-title"><b>INPUT</b><span>SKU qty × cost membina kos produk. Shipping: Cost seller sentiasa dalam COGS; Charge customer ditambah pada harga bila Free Shipping OFF. Regular/Selling Price = per pakej (1 order).</span></div></td></tr>`;
+  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="input-title"><b>INPUT</b><span>SKU, shipping &amp; prices — per order</span><span class="info-dot sec-tip" tabindex="0" title="COGS = (Σ SKU qty × cost) + seller shipping cost. Seller shipping is always in COGS. Customer shipping charge is added to price only when Free Shipping is OFF. Prices are per package (1 order).">i</span></div></td></tr>`;
 
   const inputRows = [
     ["Package Name",(i,p)=>`<input data-i="${i}" data-k="name" value="${esc(p.name)}">`],
@@ -177,7 +177,7 @@ function renderTable(){
     html += `<tr><td class="row-label">${label}</td>${S.packages.map((p,i)=>`<td>${fn(i,p)}</td>`).join("")}</tr>`;
   });
 
-  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="output-title"><b>OUTPUT</b><span>Semua angka di bawah adalah PER ORDER (1 pakej = 1 order; shipping sekali per order).</span></div></td></tr>`;
+  html += `<tr class="section-row"><td colspan="${cols+1}"><div class="output-title"><b>OUTPUT</b><span>All figures are per order</span><span class="info-dot sec-tip" tabindex="0" title="1 package = 1 order. Shipping is charged once per order.">i</span></div></td></tr>`;
   const outputs = [
     ["COGS",c=>money(c.cogs),"cell-value","(Σ SKU qty × cost) + Shipping Cost. Shipping Cost (kos seller) sentiasa dalam COGS."],
     ["Regular Price",c=>money(c.regularPackage),"cell-value","Regular Price + Shipping Charge — cuma bila Free Shipping OFF (0 tambahan bila ON)."],
@@ -188,7 +188,7 @@ function renderTable(){
     ["Gross Margin",c=>(c.grossMargin*100).toFixed(2)+"%","good","Gross Profit ÷ Selling Price"]
   ];
   outputs.forEach(([label,fn,cl,formula]) => {
-    html += `<tr><td class="row-label row-label-dot"><span>${label}</span><span class="info-dot" tabindex="0" title="${formula}" aria-label="Formula: ${formula}">i</span></td>${S.packages.map(p=>`<td class="${cl} cell-value">${fn(calcPackage(p))}</td>`).join("")}</tr>`;
+    html += `<tr><td class="row-label row-label-dot"><span>${label}</span><span class="info-dot" tabindex="0" title="${formula}" aria-label="${label}, formula">i</span></td>${S.packages.map(p=>`<td class="${cl} cell-value">${fn(calcPackage(p))}</td>`).join("")}</tr>`;
   });
   html += `</tbody>`;
   $("packageTable").innerHTML = html;
