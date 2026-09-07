@@ -166,8 +166,8 @@ function renderPkgStrip(){
           <span class="pp-gp">GP ${money(c.grossProfit)}</span>
         </span>
         <span class="pp-acts">
-          <button type="button" class="pp-ico pp-dup" data-pillact="dup" data-pi="${i}" title="Duplicate package" aria-label="Duplicate ${nm}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
           <button type="button" class="pp-ico pp-del" data-pillact="del" data-pi="${i}" title="${many ? "Remove package" : "Keep at least one package"}" aria-label="Remove ${nm}" ${many ? "" : "disabled"}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+          <button type="button" class="pp-ico pp-dup" data-pillact="dup" data-pi="${i}" title="Duplicate package" aria-label="Duplicate ${nm}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
         </span>
       </div>`;
     });
@@ -237,13 +237,7 @@ function renderEditor(){
   const i = active, p = S.packages[i];
   normalizePackage(p);
   const off = !!p.freeShip;
-  const canRemove = S.packages.length>1;
   el.innerHTML = `
-    <div class="editor-head">
-      <div class="editor-actions">
-        ${canRemove ? `<button type="button" class="ghost-btn danger" data-act="del" title="Remove this package">Remove</button>` : ""}
-      </div>
-    </div>
     <div class="editor-grid">
       <label class="e-card e-name">
         <span class="e-label">Package Name</span>
