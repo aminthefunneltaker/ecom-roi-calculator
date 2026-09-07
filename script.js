@@ -152,7 +152,7 @@ function renderPkgStrip(){
       const on = i===active;
       const prim = i===S.primary;
       h += `<button type="button" role="tab" aria-selected="${on}" class="pkg-pill${on?" active":""}" data-pill="${i}" title="${prim ? "Primary package — drives Section 02." : "Open this package in the editor."}">
-        <span class="pp-name"><span class="pp-nm">${esc(pkgName(p,i))}</span>${prim?'<span class="pp-star">★</span>':""}</span>
+        <span class="pp-name"><span class="pp-nm">${esc(pkgName(p,i))}</span></span>
         <span class="pp-gp">GP ${money(c.grossProfit)}</span>
       </button>`;
     });
@@ -180,7 +180,7 @@ function renderCompare(){
   }
   let h = '<div class="table-wrap pkg-cmp-wrap"><table class="pkg-cmp"><thead><tr><th>METRIC</th>';
   S.packages.forEach((p,i)=>{
-    h += `<th>${i===S.primary?'<span class="cmp-star" title="Primary package — drives Section 02">★</span>':""}<div class="package-title">${esc(pkgName(p,i))}</div></th>`;
+    h += `<th><div class="package-title">${esc(pkgName(p,i))}</div></th>`;
   });
   h += "</tr></thead><tbody>";
   OUTPUT_ROWS.forEach(([label,fn,cl,formula])=>{
@@ -225,10 +225,6 @@ function renderEditor(){
   const canRemove = S.packages.length>1;
   el.innerHTML = `
     <div class="editor-head">
-      <div class="editor-title">
-        <span class="hint-chip">Package ${i+1} of ${S.packages.length}</span>
-        <span class="editor-sub">${i===S.primary ? "Primary — drives Section 02 · edit here" : "Editing one package at a time — all compared below"}</span>
-      </div>
       <div class="editor-actions">
         <button type="button" class="ghost-btn" data-act="dup" title="Duplicate this package">⧉ Duplicate</button>
         ${canRemove ? `<button type="button" class="ghost-btn danger" data-act="del" title="Remove this package">Remove</button>` : ""}
@@ -241,13 +237,10 @@ function renderEditor(){
       </label>
 
       <div class="e-card">
-        <span class="e-label">Pricing <em class="e-subh">per order · 1 package = 1 order</em></span>
-        <div class="e-2col">
-          <label class="e-sub">Regular Price
-            <div class="unit"><b>RM</b><input type="text" data-numeric="1" inputmode="decimal" data-k="regular" value="${formatNumberInput(p.regular)}"></div></label>
-          <label class="e-sub">Selling Price
-            <div class="unit"><b>RM</b><input type="text" data-numeric="1" inputmode="decimal" data-k="selling" value="${formatNumberInput(p.selling)}"></div></label>
-        </div>
+        <div class="e-card-head"><span class="e-label">SKUs in Package</span>
+          <button type="button" class="add-sku" data-act="addsku">+ Add SKU</button></div>
+        <div class="esku-list">${skuEditorRows(p)}</div>
+        <small class="e-note">COGS = Σ (qty × cost/unit) + seller shipping cost.</small>
       </div>
 
       <div class="e-card">
@@ -265,10 +258,13 @@ function renderEditor(){
       </div>
 
       <div class="e-card">
-        <div class="e-card-head"><span class="e-label">SKUs in Package</span>
-          <button type="button" class="add-sku" data-act="addsku">+ Add SKU</button></div>
-        <div class="esku-list">${skuEditorRows(p)}</div>
-        <small class="e-note">COGS = Σ (qty × cost/unit) + seller shipping cost.</small>
+        <span class="e-label">Pricing <em class="e-subh">per order · 1 package = 1 order</em></span>
+        <div class="e-2col">
+          <label class="e-sub">Regular Price
+            <div class="unit"><b>RM</b><input type="text" data-numeric="1" inputmode="decimal" data-k="regular" value="${formatNumberInput(p.regular)}"></div></label>
+          <label class="e-sub">Selling Price
+            <div class="unit"><b>RM</b><input type="text" data-numeric="1" inputmode="decimal" data-k="selling" value="${formatNumberInput(p.selling)}"></div></label>
+        </div>
       </div>
     </div>`;
 }
