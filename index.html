@@ -35,6 +35,12 @@
   </header>
 
   <div id="mainTab" class="tab-panel active">
+  <div class="pdf-bar">
+    <button id="pdfMainBtn" class="pdf-btn" type="button" aria-label="Download Profitability & Target as PDF" title="Opens the print dialog — choose 'Save as PDF' to download.">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Download PDF</span>
+    </button>
+  </div>
   <section class="panel">
     <div class="section-head">
       <div class="head-title">
@@ -162,6 +168,12 @@
   </div>
 
   <div id="currentTab" class="tab-panel">
+  <div class="pdf-bar">
+    <button id="pdfCurrentBtn" class="pdf-btn" type="button" aria-label="Download Current Performance as PDF" title="Opens the print dialog — choose 'Save as PDF' to download.">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Download PDF</span>
+    </button>
+  </div>
   <section class="panel">
     <div class="section-head">
       <div class="head-title">
@@ -207,7 +219,9 @@
 
   <footer>Dibangunkan oleh Funnel Taker Marketing</footer>
 </main>
+<div id="printArea" aria-hidden="true"></div>
 <script src="script.js?v=8727423"></script>
+<script src="script-pdf.js?v=8727423"></script>
 <script>
 /* Theme toggle: flips html[data-theme] and persists to localStorage.
    FOUC already prevented by the head script. Icon/label visibility is

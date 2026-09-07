@@ -511,3 +511,133 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding-top:24px}
   .net-result strong{font-size:29px}
   .table-wrap{border-radius:13px}
 }
+
+/* ============================================================
+   PER-TAB "Download PDF" (print-to-PDF) + PHONE OPTIMISATION
+   Zack, 2026-09-07. Visual/layout only — calculation logic
+   untouched. Appended so it cannot disturb earlier rules.
+   ============================================================ */
+
+/* ---------- PDF bar + button (screen only) ---------- */
+.pdf-bar{display:flex;justify-content:flex-end;align-items:center;margin:4px 0 0;padding:2px 2px 6px}
+.pdf-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--accent-line);background:var(--card);color:var(--accent-ink);
+  border-radius:999px;padding:10px 17px;font-family:var(--font-body);font-size:12.5px;font-weight:700;
+  cursor:pointer;box-shadow:var(--shadow-sm);white-space:nowrap;-webkit-tap-highlight-color:transparent;
+  transition:background .15s ease,border-color .15s ease,color .15s ease,transform .1s ease;
+}
+.pdf-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.pdf-btn:active{transform:translateY(1px)}
+
+/* ---------- Print document (hidden on screen) ---------- */
+#printArea{display:none}
+
+@media print{
+  @page{margin:11mm}
+  html,body{background:#fff !important;background-image:none !important}
+  body *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  main.app,.app,footer{display:none !important}
+  #printArea{display:block !important;font-family:Inter,Helvetica,Arial,sans-serif;color:#14201a;font-size:11px;line-height:1.4}
+  #printArea .p-doc{max-width:100%}
+  #printArea .p-head{margin:0 0 12px;padding-bottom:8px;border-bottom:3px solid #0d7a53}
+  #printArea .p-title{font:700 21px "Space Grotesk",Inter,Arial,sans-serif;color:#0d7a53;letter-spacing:-.02em}
+  #printArea .p-sub{font-size:12.5px;font-weight:600;color:#2c3a32;margin-top:1px}
+  #printArea .p-meta{font-size:9px;color:#64746b;margin-top:3px}
+  #printArea .p-sec{margin:12px 0}
+  #printArea .p-sec-head{display:flex;align-items:center;gap:7px;margin:12px 0 6px;break-inside:avoid}
+  #printArea .p-num{width:19px;height:19px;border-radius:6px;background:#0d7a53;color:#fff;display:inline-grid;place-items:center;font-size:10px;font-weight:800}
+  #printArea .p-sec-t{font:700 13.5px "Space Grotesk",Inter,Arial;color:#0a5f43}
+  #printArea table{width:100%;border-collapse:collapse}
+  #printArea .p-kv th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#64746b;font-weight:800;padding:4px 10px 4px 0;border-bottom:1px solid #e3e9e3;width:40%;vertical-align:top}
+  #printArea .p-kv td{text-align:right;font-weight:600;color:#14201a;padding:4px 0 4px 8px;border-bottom:1px solid #e3e9e3;vertical-align:top;white-space:normal;word-break:break-word}
+  #printArea .p-kv td.strong{color:#0d7a53;font-weight:800;font-size:12px}
+  #printArea .p-grid{display:flex;flex-wrap:wrap;gap:7px;margin:4px 0}
+  #printArea .p-tile{border:1px solid #dbe3dc;border-radius:8px;padding:8px 10px;background:#f7faf7;break-inside:avoid;box-sizing:border-box}
+  #printArea .p-g4 .p-tile{flex:1 1 21%;min-width:115px}
+  #printArea .p-g2 .p-tile{flex:1 1 20%;min-width:140px}
+  #printArea .p-tile.hl{background:linear-gradient(180deg,#e4f3eb,#f5faf7);border-color:#c9e3d3}
+  #printArea .p-k{font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:#64746b;font-weight:800}
+  #printArea .p-v{font-size:15px;font-weight:800;color:#0d7a53;margin-top:2px;font-variant-numeric:tabular-nums;letter-spacing:-.01em;white-space:nowrap}
+  #printArea .p-tile .p-v.sm{font-size:12px}
+  #printArea .p-c{font-size:8px;color:#8b9a90;margin-top:1px}
+  #printArea .p-econ{table-layout:fixed;margin:4px 0;font-size:9px;border:1px solid #dbe3dc}
+  #printArea .p-econ th{background:#f2f6f2;border-bottom:1px solid #dbe3dc;border-right:1px solid #dbe3dc;font-size:7.5px;text-transform:uppercase;letter-spacing:.05em;color:#64746b;font-weight:800;padding:4px 5px;text-align:center;vertical-align:middle}
+  #printArea .p-econ th.left{text-align:left}
+  #printArea .p-econ td{border-top:1px solid #eef2ee;border-right:1px solid #eef2ee;padding:5px;vertical-align:top;text-align:right;color:#14201a;word-break:normal}
+  #printArea .p-econ td.left{text-align:left}
+  #printArea .p-econ th:last-child,#printArea .p-econ td:last-child{border-right:0}
+  #printArea .p-econ td.strong{font-weight:800;color:#0d7a53;white-space:nowrap}
+  #printArea .p-econ .skus{white-space:normal;word-break:break-word;text-align:left}
+  #printArea .p-pkgname{display:block;font-weight:800;color:#14201a;font-size:9.5px;white-space:normal}
+  #printArea .p-badge{display:inline-block;margin-left:4px;font-size:6.5px;font-weight:800;background:#0d7a53;color:#fff;border-radius:3px;padding:1px 4px;text-transform:uppercase;vertical-align:1px}
+  #printArea .p-ship{display:block;font-size:7px;color:#8b9a90;margin-top:2px;white-space:normal}
+  #printArea .p-sec-mini{font-weight:800;color:#0a5f43;font-size:10.5px;margin:3px 0 1px}
+  #printArea .p-sec-mini em{font-weight:600;color:#64746b;font-style:normal;font-size:8px;margin-left:3px}
+  #printArea .p-two{display:flex;gap:16px;margin-top:2px;break-inside:avoid}
+  #printArea .p-half{flex:1 1 0;min-width:0}
+  #printArea .p-net{border:1.5px solid #0d7a53;background:linear-gradient(180deg,#e4f3eb,#eef7f1);border-radius:9px;padding:12px 16px;break-inside:avoid;margin-top:6px}
+  #printArea .p-net .p-k{color:#0a5f43;font-size:8.5px}
+  #printArea .p-net .p-v{font-size:28px;margin-top:2px}
+  #printArea .p-net.loss{border-color:#cf3f35;background:#fbeceb}
+  #printArea .p-net.loss .p-k,#printArea .p-net.loss .p-v{color:#cf3f35}
+  #printArea .p-net .p-c{font-size:8px;color:#64746b;margin-top:2px}
+  #printArea .p-net.loss .p-c{color:#a33a32}
+}
+
+/* ---------- Phone optimisation (320–430px) ---------- */
+@media(max-width:640px){
+  .pdf-bar{justify-content:flex-end}
+}
+@media(max-width:520px){
+  .hero{padding:20px 14px 0}
+  .sub{font-size:13px}
+  .pdf-btn{padding:10px 15px;font-size:12px}
+}
+@media(max-width:430px){
+  .app{padding:12px 8px 40px}
+  .panel{padding:17px 13px;border-radius:16px;margin:14px 0}
+  .hero{padding:17px 13px 0;border-radius:16px}
+  .tabs{margin-top:18px}
+  .tab{padding:12px 7px;font-size:12.5px}
+  h2{font-size:16.5px}
+  .step{width:34px;height:34px;border-radius:10px;font-size:11px}
+  .head-title{gap:11px}
+  /* Add Package = comfortable full-width tap target under its title */
+  #addPackage{width:100%;text-align:center;padding:13px;border-radius:11px}
+  .section-head{margin-bottom:18px}
+  /* profitability cards */
+  .profit-card{padding:14px 14px 15px;border-radius:12px}
+  .profit-card>strong{font-size:23px;margin-top:8px}
+  .profit-card:first-child>strong{font-size:26px}
+  .split-value{gap:7px}
+  .split-value span{padding:8px 9px}
+  .split-value b{font-size:13.5px;white-space:normal;line-height:1.2;word-break:break-word}
+  /* table: adapt width to content so a few packages fill the screen
+     (no forced 760px min), and scroll only when many columns truly need it */
+  .table-wrap table{min-width:0;width:100%;table-layout:auto}
+  .table-wrap thead th:first-child{width:auto;min-width:104px}
+  .table-wrap th,.table-wrap td{padding:9px 8px}
+  thead th{font-size:9.5px}
+  .row-label{font-size:11px}
+  .table-wrap input{height:38px;font-size:13px}
+  .table-wrap .unit{height:38px}
+  /* keep sticky labels opaque over scrolled package columns */
+  .table-wrap thead th:first-child{background:var(--thead)}
+  .table-wrap td:first-child.row-label{background:var(--surface)}
+  /* cards / net-result sizing for long RM figures */
+  .target-grid strong,.split-grid strong,.performance-results strong{font-size:19px}
+  .performance-results article{padding:13px 14px}
+  .target-grid>div,.split-grid>div{padding:13px 14px}
+  .net-result{padding:15px 16px}
+  .net-result strong{font-size:26px}
+  .commission-fields .setting-card,.setting-card{padding:14px 15px}
+  .settings-grid{gap:12px}
+}
+@media(max-width:360px){
+  .profit-card{padding:12px 12px 13px}
+  .profit-card>strong{font-size:21px}
+  .profit-card:first-child>strong{font-size:23px}
+  .split-value b{font-size:12.5px}
+  .split-value{grid-template-columns:1fr}
+}
