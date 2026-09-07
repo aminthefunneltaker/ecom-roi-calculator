@@ -530,59 +530,109 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding-top:24px}
 .pdf-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
 .pdf-btn:active{transform:translateY(1px)}
 
-/* ---------- Print document (hidden on screen) ---------- */
+/* ---------- Print (hidden on screen) ---------- */
 #printArea{display:none}
 
+/* ============================================================
+   Download PDF — app-accurate snapshot of the ACTIVE tab.
+   Zack, 2026-09-07 (rework). Content is cloned/built with the
+   app's OWN styled classes + theme tokens (see script-pdf.js),
+   so the PDF matches the on-screen cards/tables/type/green
+   branding and follows the ACTIVE theme (light or dark) — it is
+   NOT a rebuilt "clean report". Visual only; logic untouched.
+   ============================================================ */
 @media print{
-  @page{margin:11mm}
-  html,body{background:#fff !important;background-image:none !important}
-  body *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  @page{ size:A4 portrait; margin:12mm 11mm; }
+  /* honour the ACTIVE theme's page canvas instead of forcing white */
+  html,body{ background:var(--bg) !important; background-image:none !important; }
+  body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   main.app,.app,footer{display:none !important}
-  #printArea{display:block !important;font-family:Inter,Helvetica,Arial,sans-serif;color:#14201a;font-size:11px;line-height:1.4}
-  #printArea .p-doc{max-width:100%}
-  #printArea .p-head{margin:0 0 12px;padding-bottom:8px;border-bottom:3px solid #0d7a53}
-  #printArea .p-title{font:700 21px "Space Grotesk",Inter,Arial,sans-serif;color:#0d7a53;letter-spacing:-.02em}
-  #printArea .p-sub{font-size:12.5px;font-weight:600;color:#2c3a32;margin-top:1px}
-  #printArea .p-meta{font-size:9px;color:#64746b;margin-top:3px}
-  #printArea .p-sec{margin:12px 0}
-  #printArea .p-sec-head{display:flex;align-items:center;gap:7px;margin:12px 0 6px;break-inside:avoid}
-  #printArea .p-num{width:19px;height:19px;border-radius:6px;background:#0d7a53;color:#fff;display:inline-grid;place-items:center;font-size:10px;font-weight:800}
-  #printArea .p-sec-t{font:700 13.5px "Space Grotesk",Inter,Arial;color:#0a5f43}
-  #printArea table{width:100%;border-collapse:collapse}
-  #printArea .p-kv th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#64746b;font-weight:800;padding:4px 10px 4px 0;border-bottom:1px solid #e3e9e3;width:40%;vertical-align:top}
-  #printArea .p-kv td{text-align:right;font-weight:600;color:#14201a;padding:4px 0 4px 8px;border-bottom:1px solid #e3e9e3;vertical-align:top;white-space:normal;word-break:break-word}
-  #printArea .p-kv td.strong{color:#0d7a53;font-weight:800;font-size:12px}
-  #printArea .p-grid{display:flex;flex-wrap:wrap;gap:7px;margin:4px 0}
-  #printArea .p-tile{border:1px solid #dbe3dc;border-radius:8px;padding:8px 10px;background:#f7faf7;break-inside:avoid;box-sizing:border-box}
-  #printArea .p-g4 .p-tile{flex:1 1 21%;min-width:115px}
-  #printArea .p-g2 .p-tile{flex:1 1 20%;min-width:140px}
-  #printArea .p-tile.hl{background:linear-gradient(180deg,#e4f3eb,#f5faf7);border-color:#c9e3d3}
-  #printArea .p-k{font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:#64746b;font-weight:800}
-  #printArea .p-v{font-size:15px;font-weight:800;color:#0d7a53;margin-top:2px;font-variant-numeric:tabular-nums;letter-spacing:-.01em;white-space:nowrap}
-  #printArea .p-tile .p-v.sm{font-size:12px}
-  #printArea .p-c{font-size:8px;color:#8b9a90;margin-top:1px}
-  #printArea .p-econ{table-layout:fixed;margin:4px 0;font-size:9px;border:1px solid #dbe3dc}
-  #printArea .p-econ th{background:#f2f6f2;border-bottom:1px solid #dbe3dc;border-right:1px solid #dbe3dc;font-size:7.5px;text-transform:uppercase;letter-spacing:.05em;color:#64746b;font-weight:800;padding:4px 5px;text-align:center;vertical-align:middle}
-  #printArea .p-econ th.left{text-align:left}
-  #printArea .p-econ td{border-top:1px solid #eef2ee;border-right:1px solid #eef2ee;padding:5px;vertical-align:top;text-align:right;color:#14201a;word-break:normal}
-  #printArea .p-econ td.left{text-align:left}
-  #printArea .p-econ th:last-child,#printArea .p-econ td:last-child{border-right:0}
-  #printArea .p-econ td.strong{font-weight:800;color:#0d7a53;white-space:nowrap}
-  #printArea .p-econ .skus{white-space:normal;word-break:break-word;text-align:left}
-  #printArea .p-pkgname{display:block;font-weight:800;color:#14201a;font-size:9.5px;white-space:normal}
-  #printArea .p-badge{display:inline-block;margin-left:4px;font-size:6.5px;font-weight:800;background:#0d7a53;color:#fff;border-radius:3px;padding:1px 4px;text-transform:uppercase;vertical-align:1px}
-  #printArea .p-ship{display:block;font-size:7px;color:#8b9a90;margin-top:2px;white-space:normal}
-  #printArea .p-sec-mini{font-weight:800;color:#0a5f43;font-size:10.5px;margin:3px 0 1px}
-  #printArea .p-sec-mini em{font-weight:600;color:#64746b;font-style:normal;font-size:8px;margin-left:3px}
-  #printArea .p-two{display:flex;gap:16px;margin-top:2px;break-inside:avoid}
-  #printArea .p-half{flex:1 1 0;min-width:0}
-  #printArea .p-net{border:1.5px solid #0d7a53;background:linear-gradient(180deg,#e4f3eb,#eef7f1);border-radius:9px;padding:12px 16px;break-inside:avoid;margin-top:6px}
-  #printArea .p-net .p-k{color:#0a5f43;font-size:8.5px}
-  #printArea .p-net .p-v{font-size:28px;margin-top:2px}
-  #printArea .p-net.loss{border-color:#cf3f35;background:#fbeceb}
-  #printArea .p-net.loss .p-k,#printArea .p-net.loss .p-v{color:#cf3f35}
-  #printArea .p-net .p-c{font-size:8px;color:#64746b;margin-top:2px}
-  #printArea .p-net.loss .p-c{color:#a33a32}
+
+  #printArea{ display:block !important; background:var(--bg); color:var(--text);
+    font-family:var(--font-body); font-size:13px; line-height:1.4; }
+  #printArea, #printArea *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  #printArea .p-sheet{ max-width:100% }
+
+  /* ---- masthead (mirrors hero: ink title, green eyebrow pill) ---- */
+  #printArea .p-mast{ display:flex; align-items:flex-end; justify-content:space-between; gap:14px;
+    flex-wrap:wrap; padding:0 0 13px; margin:0 0 16px; border-bottom:1px solid var(--line); break-inside:avoid; }
+  #printArea .p-mast-l{ min-width:0 }
+  #printArea .p-brand{ font-family:var(--font-display); font-weight:700; font-size:24px;
+    letter-spacing:-.02em; color:var(--ink); line-height:1.1; }
+  #printArea .p-eyebrow{ display:inline-flex; align-items:center; gap:8px; margin-top:9px;
+    padding:5px 12px 5px 9px; border:1px solid var(--accent-line); border-radius:999px; background:var(--glass);
+    font-family:var(--font-display); font-size:10.5px; font-weight:700; letter-spacing:.09em;
+    color:var(--accent-ink); text-transform:uppercase; }
+  #printArea .p-eyebrow::before{ content:""; width:7px; height:7px; border-radius:50%;
+    background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  #printArea .p-stamp{ font-size:10px; color:var(--muted); text-align:right; white-space:nowrap; }
+
+  /* ---- framed sections (app .panel look via theme tokens) ---- */
+  #printArea .p-panel{ background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--r-lg); padding:16px 20px; margin:0 0 12px; }
+  #printArea .p-sechead{ display:flex; align-items:center; gap:12px; margin:0 0 11px; break-inside:avoid; }
+  #printArea .p-step{ flex:0 0 auto; width:30px; height:30px; border-radius:10px; background:var(--accent-soft);
+    border:1px solid var(--accent-line); color:var(--accent-ink); display:grid; place-items:center;
+    font-family:var(--font-display); font-weight:700; font-size:12px; }
+  #printArea .p-h2{ font-family:var(--font-display); font-size:17px; font-weight:700; letter-spacing:-.015em;
+    color:var(--ink); margin:0; line-height:1.2; }
+  #printArea .p-ctx{ font-size:11.5px; color:var(--muted); margin:8px 0 0; line-height:1.45; }
+  #printArea .p-ctx b{ color:var(--text); font-weight:700; }
+  #printArea .p-subh{ font-family:var(--font-display); font-weight:700; font-size:13px;
+    letter-spacing:-.015em; color:var(--ink); margin:12px 0 7px; }
+
+  /* cloned live cards: hide tooltip dots, never ellipsis/clip big KPIs, avoid splits */
+  #printArea .info, #printArea .info-dot{ display:none !important; }
+  #printArea .profit-card > strong, #printArea .target-grid strong, #printArea .split-grid strong,
+  #printArea .performance-results strong, #printArea .net-result strong{
+    white-space:normal; line-height:1.15; word-break:break-word; overflow:visible; text-overflow:clip; }
+  /* compact the cloned Current-Performance result cards so the whole
+     tab (results + net + CTA footer) can sit on one page if it fits */
+  #printArea .performance-results{ gap:9px; }
+  #printArea .performance-results article{ padding:12px 13px; }
+  #printArea .performance-results small{ margin:0; }
+  #printArea .performance-results strong{ font-size:19px; margin-top:4px; }
+  #printArea .net-result{ padding:13px 18px; margin-top:12px; }
+  #printArea .net-result strong{ font-size:27px; }
+  #printArea .profit-card, #printArea .target-grid > div, #printArea .split-grid > div,
+  #printArea .performance-results article, #printArea .net-result, #printArea .target-section,
+  #printArea .p-sec-spread{ break-inside:avoid; }
+  #printArea .target-section + .target-section{ margin-top:20px; border-top:1px solid var(--line); padding-top:18px; }
+
+  /* grids: 2-up profit/results; keep target 3-across so no orphan card */
+  #printArea .profit-grid, #printArea .performance-results{ grid-template-columns:repeat(2,1fr); }
+  #printArea .target-grid, #printArea .daily-grid{ grid-template-columns:1.1fr 1.1fr 1.5fr; }
+  #printArea .split-grid{ grid-template-columns:1fr; }
+
+  /* ---- tables: fit the page — all package columns visible, never truncated ---- */
+  #printArea .table-wrap{ overflow:visible; }
+  #printArea .p-tbl{ width:100%; min-width:0; table-layout:fixed; }
+  #printArea .p-tbl thead th:first-child,
+  #printArea .p-tbl td.row-label{ position:static; width:118px; box-shadow:none; }
+  #printArea .p-tbl.kv td.row-label{ width:220px; }
+  #printArea .p-tbl th, #printArea .p-tbl td{ padding:9px 10px; vertical-align:top; }
+  #printArea .p-tbl thead th{ text-align:left; }
+  #printArea .p-tbl .p-pkgname{ display:block; font-family:var(--font-display); font-weight:800; font-size:12.5px;
+    letter-spacing:-.01em; color:var(--ink); text-transform:none; white-space:normal; word-break:break-word; }
+  #printArea .p-badge{ display:inline-block; margin:6px 0 0; font-size:7.5px; font-weight:800; letter-spacing:.05em;
+    background:var(--accent); color:var(--on-accent); border-radius:5px; padding:2px 7px; text-transform:uppercase; }
+  #printArea .p-pkgsub{ display:block; font-size:8.5px; font-weight:600; color:var(--muted);
+    margin-top:6px; white-space:normal; word-break:break-word; line-height:1.5; }
+  #printArea .p-pkgsub .em{ color:var(--faint); font-weight:700; }
+  #printArea .p-tbl .cell-value{ white-space:normal; word-break:break-word; text-align:right; }
+  #printArea .p-tbl td.row-label{ white-space:normal; }
+  #printArea thead{ display:table-header-group; }
+  #printArea tr{ break-inside:avoid; }
+  #printArea .p-empty{ color:var(--muted); font-size:12px; padding:6px 0; }
+
+  /* ---- footer (app link + CTA) ---- */
+  #printArea .p-foot{ margin-top:0; padding-top:13px; border-top:1px solid var(--line);
+    text-align:center; break-inside:avoid; }
+  #printArea .p-cta{ font-family:var(--font-display); font-weight:700; font-size:14px; color:var(--ink); }
+  #printArea .p-link{ display:inline-block; margin-top:7px; font-family:var(--font-display); font-weight:700;
+    font-size:15.5px; letter-spacing:-.01em; color:var(--accent); text-decoration:none; word-break:break-all; }
+  #printArea .p-note{ font-size:10.5px; color:var(--muted); margin-top:7px; }
+  #printArea .p-made{ font-size:9px; color:var(--faint); margin-top:12px; letter-spacing:.03em; }
 }
 
 /* ---------- Phone optimisation (320–430px) ---------- */

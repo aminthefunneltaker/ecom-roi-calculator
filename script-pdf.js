@@ -1,17 +1,32 @@
 /* ============================================================
    ecom-roi-calculator — per-tab "Download PDF" (print-to-PDF)
-   Zack, 2026-09-07. Reads live app state (global S + rendered
-   output ids) into a clean, printable document and calls
-   window.print() → user picks "Save as PDF". Works fully
-   offline (no CDN lib), native print quality, wide tables
-   never truncated (vertical/narrow layout + cell wrap).
-   Calculation LOGIC is not touched — this file only reads
-   already-computed values and mirrors S.
+   REWORK (Zack, 2026-09-07).
+   Purpose changed vs T7: instead of REBUILDING a bespoke "clean
+   report" into #printArea (layout/theme diverged from the app),
+   we now snapshot the ACTIVE tab so the PDF looks like the app
+   on-screen: the live KPI card grids are deep-cloned with their
+   real classes, and the input-heavy package tables are re-rendered
+   read-only using the app's OWN table classes + theme tokens.
+   Because styling comes from the app's stylesheet + html[data-theme]
+   CSS variables, the PDF follows the ACTIVE theme (light OR dark)
+   automatically — nothing is hardcoded to light.
+
+   Rules honoured:
+   - Calculation LOGIC untouched — we only read already-computed
+     values (S / rendered DOM ids) and mirror S.
+   - Fully offline (no CDN). window.print() → "Save as PDF".
+   - Wide package tables fit the page (no column truncation): the
+     print stylesheet forces table-layout:fixed + width:100% +
+     min-width:0, so every package column is visible and shrinks to
+     the printable width instead of being cut off.
    ============================================================ */
 (function () {
   'use strict';
   var PA = document.getElementById('printArea');
   if (!PA) return;
+
+  var APP_URL = 'https://web-app.funneltaker.com/ecom-roi-calculator/';
+  var S_ = (typeof S !== 'undefined') ? S : { packages: [], primary: 0 };
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (m) {
@@ -19,165 +34,211 @@
     });
   }
   function g(id) { return document.getElementById(id); }
-  function txt(id) { var el = g(id); return (el && el.textContent) ? el.textContent : '—'; }
+  /* money() is provided by script.js (global) — do NOT shadow it. */
+  function num(v) { var n = Number(String(v == null ? 0 : v).replace(/,/g, '')); return Number.isFinite(n) ? Math.max(0, n) : 0; }
+  function pkg(i) { return (Array.isArray(S_.packages) && S_.packages[i]) ? S_.packages[i] : null; }
   function fmtDate() {
     try { return new Date().toLocaleString('en-MY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
     catch (e) { return new Date().toLocaleString(); }
   }
-  function cell(label, value, cls) { return '<tr><th>' + label + '</th><td' + (cls ? ' class="' + cls + '"' : '') + '>' + value + '</td></tr>'; }
-  function pkgs() { return Array.isArray(S && S.packages) ? S.packages : []; }
-
-  function sectionTitle(num, t) {
-    return '<div class="p-sec-head"><span class="p-num">' + num + '</span><span class="p-sec-t">' + t + '</span></div>';
+  function cloneClean(sel, host) {
+    /* deep-clone live output nodes, dropping ids so the snapshot can't
+       collide with the real app elements still in the DOM. */
+    var out = [];
+    var list = (host || document).querySelectorAll(sel);
+    for (var i = 0; i < list.length; i++) {
+      var c = list[i].cloneNode(true);
+      var ids = c.querySelectorAll('[id]');
+      for (var j = 0; j < ids.length; j++) ids[j].removeAttribute('id');
+      var selfId = c.getAttribute('id'); if (selfId) c.removeAttribute('id');
+      out.push(c);
+    }
+    return out;
   }
 
-  function buildMain() {
-    var H = [];
-    H.push('<div class="p-doc">');
-    H.push('<div class="p-head"><div class="p-title">Meta Ads Profit Calculator</div>'
-      + '<div class="p-sub">Profitability &amp; Target</div>'
-      + '<div class="p-meta">Exported ' + fmtDate() + '</div></div>');
+  /* ---------- section / page chrome builders ---------- */
+  function secHead(step, title) {
+    return '<div class="p-sechead"><span class="p-step">' + step + '</span><div><div class="p-h2">' + title + '</div></div></div>';
+  }
+  function ctxLine(html) {
+    return html ? '<p class="p-ctx">' + html + '</p>' : '';
+  }
+  function subHead(t) {
+    return '<div class="p-subh">' + t + '</div>';
+  }
+  function kv(label, value, cls) {
+    return '<td class="row-label">' + esc(label) + '</td><td class="cell-value' + (cls ? ' ' + cls : '') + '">' + value + '</td>';
+  }
+  function masthead(tabLabel) {
+    return '<header class="p-mast"><div class="p-mast-l"><div class="p-brand">Meta Ads Profit Calculator</div>'
+      + '<div class="p-eyebrow">' + esc(tabLabel) + '</div></div>'
+      + '<div class="p-stamp">Exported ' + esc(fmtDate()) + '</div></header>';
+  }
+  function foot() {
+    return '<div class="p-foot"><div class="p-cta">Nak kira sasaran iklan anda sendiri?</div>'
+      + '<a class="p-link" href="' + APP_URL + '">' + esc(APP_URL) + '</a>'
+      + '<div class="p-note">Percuma &amp; berfungsi offline — Meta Ads Profit Calculator.</div>'
+      + '<div class="p-made">Dibangunkan oleh Funnel Taker Marketing</div></div>';
+  }
 
-    // 1 — Settings
-    var primaryName = '';
-    var pk = pkgs();
-    var c0 = null;
-    if (pk[S.primary]) { primaryName = pk[S.primary].name || ('Package ' + (S.primary + 1)); c0 = calcPackage(pk[S.primary]); }
-    var commTxt = 'OFF (manual)';
-    if (S.commissionEnabled) {
-      commTxt = 'ON — Marketer ' + (S.commissionPct) + '% · target RM' + Number(S.targetCommission || 0).toLocaleString('en-US') + '/month';
-    }
-    H.push('<div class="p-sec">' + sectionTitle(1, 'Settings') + '<table class="p-kv">'
-      + cell('Primary Package', esc(primaryName || '—'))
-      + cell('Meta Ads Tax Rate', S.taxRate + '%')
-      + cell('Target Net Profit', S.profitPct + '% of gross profit')
-      + cell('Marketer Commission', esc(commTxt))
-      + '</table></div>');
+  /* ---------- read-only package tables (app-styled) ---------- */
+  function pkgEconTable() {
+    var pk = S_.packages || [];
+    if (!pk.length) return '<div class="p-empty">No packages yet.</div>';
+    var H = ['<div class="table-wrap"><table class="p-tbl"><thead><tr><th class="left">Package economics</th>'];
+    pk.forEach(function (p, i) {
+      var isP = i === S_.primary;
+      var skus = (Array.isArray(p.skus) && p.skus.length ? p.skus : [{ name: '', qty: 1, productCost: 0 }]);
+      var skuTxt = skus.map(function (s) {
+        var q = num(s.qty) || 1;
+        var nm = (s.name && String(s.name).trim()) ? String(s.name).trim() : 'SKU';
+        return '<span class="em">' + q + ' &times; ' + esc(nm) + ' @ ' + money(num(s.productCost)) + '</span>';
+      }).join('');
+      var shipCost = num(p.shippingCost);
+      var charge = num(p.shippingCharge);
+      var shipTxt = '<span class="em">Shipping:</span> RM' + Number(shipCost).toFixed(2) + ' (seller)'
+        + (p.freeShip ? ' &middot; <span class="em">free shipping ON</span>' : ' &middot; RM' + Number(charge).toFixed(2) + ' (customer)');
+      H.push('<th class="p-pkgcol"><span class="p-pkgname">' + esc(p.name || ('Package ' + (i + 1))) + '</span>'
+        + (isP ? '<span class="p-badge">Primary</span>' : '')
+        + '<span class="p-pkgsub">' + skuTxt + '</span>'
+        + '<span class="p-pkgsub">' + shipTxt + '</span></th>');
+    });
+    H.push('</tr></thead><tbody>');
 
-    // 2 — Per-order profitability
-    H.push('<div class="p-sec">' + sectionTitle(2, 'Profitability (per order)') + '<div class="p-grid p-g4">'
-      + '<div class="p-tile hl"><div class="p-k">Target Net Profit</div><div class="p-v">' + txt('targetNetProfit') + '</div><div class="p-c">per order</div></div>'
-      + '<div class="p-tile"><div class="p-k">CPP</div><div class="p-v">' + txt('cppIncTax') + '</div><div class="p-c">Incl. tax</div><div class="p-v sm">' + txt('cppExTax') + '</div><div class="p-c">Excl. tax</div></div>'
-      + '<div class="p-tile"><div class="p-k">ROAS</div><div class="p-v">' + txt('roasIncTax') + '</div><div class="p-c">Incl. tax</div><div class="p-v sm">' + txt('roasExTax') + '</div><div class="p-c">Excl. tax</div></div>'
-      + '<div class="p-tile"><div class="p-k">ROI</div><div class="p-v">' + txt('roi') + '</div><div class="p-c">Target net ÷ CPP</div></div>'
-      + '</div></div>');
-
-    // 3 — Package economics
-    H.push('<div class="p-sec">' + sectionTitle(3, 'Package Economics (per order)'));
-    if (!pk.length) {
-      H.push('<table class="p-kv">' + cell('Packages', 'None') + '</table>');
-    } else {
-      var rows = ['<table class="p-econ"><thead><tr><th class="left">Package</th><th>SKUs in package</th><th>Regular</th><th>Selling / AOV</th><th>COGS</th><th>Gross Profit</th><th>Margin</th></tr></thead><tbody>'];
-      pk.forEach(function (p, i) {
-        var c = calcPackage(p);
-        var isP = i === S.primary;
-        var skus = (Array.isArray(p.skus) && p.skus.length ? p.skus : [{ qty: 1, productCost: 0 }]).map(function (s) {
-          var q = Number(s.qty) || 1; var n = (s.name && String(s.name).trim()) ? String(s.name).trim() : 'SKU';
-          return esc(q) + ' × ' + esc(n) + ' @ ' + money(Number(s.productCost) || 0);
-        }).join('<br>');
-        var ship = 'Shipping: seller ' + money(c.shippingCost)
-          + (p.freeShip ? ' · free shipping ON' : ' · customer charge ' + money(c.shippingCharge));
-        rows.push('<tr>'
-          + '<td class="left"><span class="p-pkgname">' + esc(p.name || ('Package ' + (i + 1))) + '</span>'
-          + (isP ? '<span class="p-badge">Primary</span>' : '')
-          + '<span class="p-ship">' + ship + '</span></td>'
-          + '<td class="skus">' + skus + '</td>'
-          + '<td>' + money(c.regularPackage) + '</td>'
-          + '<td class="strong">' + money(c.sellingPackage) + '</td>'
-          + '<td>' + money(c.cogs) + '</td>'
-          + '<td class="strong">' + money(c.grossProfit) + '</td>'
-          + '<td>' + (c.grossMargin * 100).toFixed(2) + '%</td>'
-          + '</tr>');
+    var rows = [
+      ['COGS', function (c) { return money(c.cogs); }, ''],
+      ['Regular Price', function (c) { return money(c.regularPackage); }, ''],
+      ['Selling / AOV', function (c) { return money(c.sellingPackage); }, 'good'],
+      ['Discount Amount', function (c) { return money(c.discountAmount); }, 'discount'],
+      ['Discount Rate', function (c) { return (c.discountRate * 100).toFixed(2) + '%'; }, ''],
+      ['Gross Profit', function (c) { return money(c.grossProfit); }, 'good'],
+      ['Gross Margin', function (c) { return (c.grossMargin * 100).toFixed(2) + '%'; }, 'good']
+    ];
+    rows.forEach(function (r) {
+      H.push('<tr><td class="row-label">' + r[0] + '</td>');
+      pk.forEach(function (p) {
+        var c = (typeof calcPackage === 'function') ? calcPackage(p) : {};
+        H.push('<td class="cell-value' + (r[2] ? ' ' + r[2] : '') + '">' + r[1](c) + '</td>');
       });
-      rows.push('</tbody></table>');
-      H.push(rows.join(''));
-    }
-    H.push('</div>');
-
-    // 4 — Monthly & Daily targets
-    H.push('<div class="p-sec">' + sectionTitle(4, 'Client / Marketer Target'));
-    var reqNet = g('requiredNet') ? g('requiredNet').value : '';
-    var reqNetFmt = '—';
-    if (reqNet !== '' && reqNet != null) { reqNetFmt = money(parseFloat(String(reqNet).replace(/,/g, '')) || 0); }
-    H.push('<table class="p-kv">' + cell('Required Net Profit', reqNetFmt, 'strong') + '</table>');
-    H.push('<div class="p-two">'
-      + '<div class="p-half"><div class="p-sec-mini">Monthly Target <em>30-day</em></div><table class="p-kv">'
-      + cell('Orders', txt('reqOrders'))
-      + cell('Sales', txt('reqSales'))
-      + cell('Ads Spent — Incl. tax', txt('reqAdsInc'))
-      + cell('Ads Spent — Excl. tax', txt('reqAdsEx'))
-      + (S.commissionEnabled ? cell('Business Share', txt('businessShare')) : '')
-      + '</table></div>'
-      + '<div class="p-half"><div class="p-sec-mini">Daily Target <em>month ÷ 30</em></div><table class="p-kv">'
-      + cell('Orders', txt('dailyOrders'))
-      + cell('Sales', txt('dailySales'))
-      + cell('Ads Spent — Incl. tax', txt('dailyAdsInc'))
-      + cell('Ads Spent — Excl. tax', txt('dailyAdsEx'))
-      + '</table></div>'
-      + '</div></div>');
-
-    H.push('</div>');
+      H.push('</tr>');
+    });
+    H.push('</tbody></table></div>');
     return H.join('');
+  }
+
+  function ordersTable() {
+    var pk = S_.packages || [];
+    if (!pk.length) return '<div class="p-empty">No packages yet.</div>';
+    var H = ['<div class="table-wrap"><table class="p-tbl"><thead><tr><th class="left">Package</th>'];
+    pk.forEach(function (p, i) {
+      H.push('<th class="p-pkgcol"><span class="p-pkgname">' + esc(p.name || ('Package ' + (i + 1))) + '</span></th>');
+    });
+    H.push('</tr></thead><tbody><tr><td class="row-label">Actual Orders</td>');
+    pk.forEach(function (p) {
+      H.push('<td class="cell-value">' + Number(p.currentOrders || 0).toLocaleString('en-US') + '</td>');
+    });
+    H.push('</tr></tbody></table></div>');
+    return H.join('');
+  }
+
+  /* ---------- snapshot assembly ---------- */
+  function sheet(el, host, tabLabel) {
+    /* el = reusable container node we append chrome + cloned cards to */
+    el.innerHTML = '';
+    el.appendChild(mastheadNode(tabLabel));
+    return el;
+  }
+  function node(html) { var d = document.createElement('div'); d.innerHTML = html; return d.firstChild; }
+
+  function buildMain() {
+    var host = g('mainTab');
+    var s = document.createElement('div');
+    s.className = 'p-sheet';
+    s.appendChild(node(masthead('Profitability & Target')));
+
+    // 01 — Package Economics
+    var p1 = document.createElement('section'); p1.className = 'p-panel';
+    p1.innerHTML = secHead('01', 'Package Economics') + ctxLine('Semua angka <b>per order</b>. 1 package = 1 order.');
+    s.appendChild(p1);
+    p1.appendChild(node(pkgEconTable()));
+
+    // 02 — Meta Ads Profitability (clone the live profit cards)
+    var p2 = document.createElement('section'); p2.className = 'p-panel';
+    var primaryPkg = pkg(S_.primary);
+    var pName = (primaryPkg && (primaryPkg.name || '').trim()) ? primaryPkg.name : ('Package ' + (S_.primary + 1));
+    p2.innerHTML = secHead('02', 'Meta Ads Profitability')
+      + ctxLine('Per <b>primary package</b> (' + esc(pName) + ') &middot; Meta Ads tax '
+        + esc(S_.taxRate) + '% &middot; target net profit <b>' + esc(S_.profitPct) + '%</b> of gross profit.');
+    s.appendChild(p2);
+    cloneClean('.profit-grid', host).forEach(function (c) { p2.appendChild(c); });
+
+    // 03 — Client / Marketer Target (clone both target sections + business share)
+    var p3 = document.createElement('section'); p3.className = 'p-panel';
+    var commTxt;
+    if (S_.commissionEnabled) {
+      commTxt = 'Commission <b>ON</b> &middot; Marketer ' + esc(S_.commissionPct) + '% &middot; target RM'
+        + Number(S_.targetCommission || 0).toLocaleString('en-US') + '/month';
+    } else {
+      var rn = g('requiredNet');
+      var rnVal = (rn && rn.value !== '' && rn.value != null) ? money(num(rn.value)) : '—';
+      commTxt = 'Commission <b>OFF</b> &middot; manual required net <b>' + rnVal + '</b>/month';
+    }
+    p3.innerHTML = secHead('03', 'Client / Marketer Target') + ctxLine(commTxt);
+    s.appendChild(p3);
+    cloneClean('.target-section', host).forEach(function (c) { p3.appendChild(c); });
+
+    s.appendChild(node(foot()));
+    return s;
   }
 
   function buildCurrent() {
-    var H = [];
-    H.push('<div class="p-doc">');
-    H.push('<div class="p-head"><div class="p-title">Meta Ads Profit Calculator</div>'
-      + '<div class="p-sub">Current Performance</div>'
-      + '<div class="p-meta">Exported ' + fmtDate() + '</div></div>');
+    var host = g('currentTab');
+    var s = document.createElement('div');
+    s.className = 'p-sheet';
+    s.appendChild(node(masthead('Current Performance')));
 
-    // 1 — Spend
-    var spendRaw = g('currentAdsSpend') ? g('currentAdsSpend').value : '';
-    var spendFmt = money(parseFloat(String(spendRaw || '0').replace(/,/g, '')) || 0);
-    H.push('<div class="p-sec">' + sectionTitle(1, 'Actual Spend &amp; Orders')
-      + '<table class="p-kv">' + cell('Ads Spend', spendFmt, 'strong') + '</table></div>');
+    // 01 — Spend + actual orders by package
+    var p1 = document.createElement('section'); p1.className = 'p-panel';
+    var spend = money(num((g('currentAdsSpend') && g('currentAdsSpend').value) || '0'));
+    p1.innerHTML = secHead('01', 'Current Performance') + ctxLine('Actual ads spend &amp; orders.');
+    s.appendChild(p1);
+    p1.appendChild(node('<div class="table-wrap"><table class="p-tbl kv"><tbody><tr>'
+      + kv('Ads Spend', spend, 'good') + '</tr></tbody></table></div>'));
+    p1.appendChild(node(subHead('Actual Orders by Package')));
+    p1.appendChild(node(ordersTable()));
 
-    // 2 — Actual orders by package
-    var pk = pkgs();
-    H.push('<div class="p-sec">' + sectionTitle(2, 'Actual Orders by Package') + '<table class="p-kv">');
-    if (!pk.length) { H.push(cell('Packages', 'None')); }
-    else {
-      pk.forEach(function (p, i) {
-        var orders = Number(p.currentOrders) || 0;
-        H.push(cell(esc(p.name || ('Package ' + (i + 1))), Number(orders).toLocaleString('en-US')));
-      });
-    }
-    H.push('</table></div>');
+    // 02 — Performance Results (clone the live result cards + net result)
+    var p2 = document.createElement('section'); p2.className = 'p-panel';
+    p2.innerHTML = secHead('02', 'Current Performance Results') + ctxLine('Blended from the actual mix &amp; spend above.');
+    s.appendChild(p2);
+    cloneClean('.performance-results', host).forEach(function (c) { p2.appendChild(c); });
+    cloneClean('.net-result', host).forEach(function (c) { p2.appendChild(c); });
 
-    // 3 — Results
-    H.push('<div class="p-sec">' + sectionTitle(3, 'Performance Results') + '<div class="p-grid p-g2">'
-      + '<div class="p-tile"><div class="p-k">Total Orders</div><div class="p-v">' + txt('currentOrders') + '</div></div>'
-      + '<div class="p-tile"><div class="p-k">Blended AOV</div><div class="p-v">' + txt('currentAov') + '</div></div>'
-      + '<div class="p-tile"><div class="p-k">Total Revenue</div><div class="p-v">' + txt('currentRevenue') + '</div></div>'
-      + '<div class="p-tile"><div class="p-k">Total COGS</div><div class="p-v">' + txt('currentCogs') + '</div></div>'
-      + '<div class="p-tile"><div class="p-k">Gross Profit</div><div class="p-v">' + txt('currentGrossProfit') + '</div></div>'
-      + '<div class="p-tile"><div class="p-k">CPP</div><div class="p-v">' + txt('currentCpp') + '</div></div>'
-      + '<div class="p-tile"><div class="p-k">ROAS</div><div class="p-v">' + txt('currentRoas') + '</div></div>'
-      + '<div class="p-tile"><div class="p-k">ROI</div><div class="p-v">' + txt('currentRoi') + '</div></div>'
-      + '</div></div>');
-
-    // 4 — Net result
-    var nr = g('currentNetProfit');
-    var isLoss = nr ? nr.classList.contains('loss') : false;
-    H.push('<div class="p-sec">' + sectionTitle(4, 'Net Result')
-      + '<div class="p-net' + (isLoss ? ' loss' : '') + '"><div class="p-k">Net Profit / Loss</div>'
-      + '<div class="p-v">' + txt('currentNetProfit') + '</div>'
-      + '<div class="p-c">' + (isLoss ? 'Operating at a loss' : 'Net position after ads spend') + '</div></div></div>');
-
-    H.push('</div>');
-    return H.join('');
+    s.appendChild(node(foot()));
+    return s;
   }
 
   function doExport(tab) {
     try {
-      PA.innerHTML = (tab === 'current') ? buildCurrent() : buildMain();
+      PA.innerHTML = '';
+      PA.appendChild((tab === 'current') ? buildCurrent() : buildMain());
       window.print();
     } catch (err) {
-      PA.innerHTML = '<div class="p-doc"><div class="p-head"><div class="p-title">Meta Ads Profit Calculator</div>'
-        + '<div class="p-sub">Sorry, the PDF could not be prepared.</div></div>'
-        + '<p>Please try the browser print option instead.</p></div>';
+      PA.innerHTML = '';
+      var fb = node('<div class="p-sheet"><div class="p-panel"><div class="p-h2">Meta Ads Profit Calculator</div>'
+        + '<p class="p-ctx">Sorry, the PDF could not be prepared. Please use your browser\'s Print option instead.</p></div></div>');
+      PA.appendChild(fb);
+      window.print();
     }
+  }
+
+  /* mastheadNode returns a real element (escaping on inner text already done above). */
+  function mastheadNode(htmlInner) {
+    var d = document.createElement('div');
+    d.innerHTML = '<header class="p-mast"><div class="p-mast-l"><div class="p-brand">Meta Ads Profit Calculator</div>'
+      + '<div class="p-eyebrow">' + htmlInner + '</div></div>'
+      + '<div class="p-stamp">Exported ' + esc(fmtDate()) + '</div></header>';
+    return d.firstChild;
   }
 
   var bMain = g('pdfMainBtn');
