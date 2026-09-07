@@ -35,35 +35,6 @@
   </header>
 
   <div id="mainTab" class="tab-panel active">
-  <section class="panel kpi-band">
-    <div class="band-head">
-      <span class="band-eyebrow">Profitability KPI</span>
-      <span class="hint">Live per-order summary from the sections below.</span>
-    </div>
-    <div class="profit-grid kpi-strip">
-      <article class="profit-card">
-        <small>Target Net Profit</small>
-        <span class="info" data-tip="Target Net Profit (per order) = Gross Profit per order × target profit %">i</span>
-        <strong id="targetNetProfit">RM0.00</strong>
-      </article>
-      <article class="profit-card">
-        <small>CPP</small>
-        <span class="info" data-tip="CPP Incl. Tax = Gross Profit − Target Net Profit. CPP Excl. Tax = CPP Incl. Tax ÷ (1 + tax rate)">i</span>
-        <div class="split-value"><span><b id="cppExTax">RM0.00</b><em>Excl. Tax</em></span><span><b id="cppIncTax">RM0.00</b><em>Incl. Tax</em></span></div>
-      </article>
-      <article class="profit-card">
-        <small>ROAS</small>
-        <span class="info" data-tip="ROAS = AOV ÷ CPP. Excl. Tax uses CPP Excl. Tax; Incl. Tax uses CPP Incl. Tax.">i</span>
-        <div class="split-value"><span><b id="roasExTax">—</b><em>Excl. Tax</em></span><span><b id="roasIncTax">—</b><em>Incl. Tax</em></span></div>
-      </article>
-      <article class="profit-card">
-        <small>ROI</small>
-        <span class="info" data-tip="ROI = Target Net Profit per order ÷ CPP Excl. Tax. Tax does not affect ROI.">i</span>
-        <strong id="roi">—</strong>
-      </article>
-    </div>
-  </section>
-
   <section class="panel">
     <div class="section-head">
       <div class="head-title">
@@ -104,12 +75,35 @@
     </div>
 
     <div class="profit-subsection">
-      <div class="subsection-title"><h3>Target Net Profit</h3><span>Target net profit = % of gross profit</span></div>
+      <div class="subsection-title"><h3>Profitability</h3><span>Target net profit = % of gross profit</span></div>
       <div id="profitPresets" class="presets"></div>
       <div id="customProfitWrap" class="custom hidden">
         <label>Custom Target Net Profit
           <div class="unit"><input id="customProfit" type="text" value="40" inputmode="decimal" data-format="number"><b>%</b></div>
         </label>
+      </div>
+
+      <div class="profit-grid">
+        <article class="profit-card">
+          <small>Target Net Profit</small>
+          <span class="info" data-tip="Target Net Profit (per order) = Gross Profit per order × target profit %">i</span>
+          <strong id="targetNetProfit">RM0.00</strong>
+        </article>
+        <article class="profit-card">
+          <small>CPP</small>
+          <span class="info" data-tip="CPP Incl. Tax = Gross Profit − Target Net Profit. CPP Excl. Tax = CPP Incl. Tax ÷ (1 + tax rate)">i</span>
+          <div class="split-value"><span><b id="cppExTax">RM0.00</b><em>Excl. Tax</em></span><span><b id="cppIncTax">RM0.00</b><em>Incl. Tax</em></span></div>
+        </article>
+        <article class="profit-card">
+          <small>ROAS</small>
+          <span class="info" data-tip="ROAS = AOV ÷ CPP. Excl. Tax uses CPP Excl. Tax; Incl. Tax uses CPP Incl. Tax.">i</span>
+          <div class="split-value"><span><b id="roasExTax">—</b><em>Excl. Tax</em></span><span><b id="roasIncTax">—</b><em>Incl. Tax</em></span></div>
+        </article>
+        <article class="profit-card">
+          <small>ROI</small>
+          <span class="info" data-tip="ROI = Target Net Profit per order ÷ CPP Excl. Tax. Tax does not affect ROI.">i</span>
+          <strong id="roi">—</strong>
+        </article>
       </div>
     </div>
   </section>
@@ -168,27 +162,6 @@
   </div>
 
   <div id="currentTab" class="tab-panel">
-  <section class="panel kpi-band">
-    <div class="band-head">
-      <span class="band-eyebrow">Performance KPI</span>
-      <span class="hint">Blended from the actual mix &amp; spend below.</span>
-    </div>
-    <div class="performance-results">
-      <article><small>Total Orders</small><strong id="currentOrders">0</strong></article>
-      <article><small>Blended AOV</small><strong id="currentAov">RM0.00</strong></article>
-      <article><small>Total Revenue</small><strong id="currentRevenue">RM0.00</strong></article>
-      <article><small>Total COGS</small><strong id="currentCogs">RM0.00</strong></article>
-      <article><small>Gross Profit</small><strong id="currentGrossProfit">RM0.00</strong></article>
-      <article><small>CPP</small><strong id="currentCpp">RM0.00</strong></article>
-      <article><small>ROAS</small><strong id="currentRoas">0.00x</strong></article>
-      <article><small>ROI</small><strong id="currentRoi">0.00x</strong></article>
-    </div>
-    <div class="net-result">
-      <small>Net Profit / Loss</small>
-      <strong id="currentNetProfit">RM0.00</strong>
-    </div>
-  </section>
-
   <section class="panel">
     <div class="section-head">
       <div class="head-title">
@@ -204,6 +177,29 @@
     <div class="current-packages">
       <div class="subhead"><h3>Actual Orders by Package</h3><span>1 order = 1 package</span></div>
       <div class="table-wrap"><table id="currentPackageTable"></table></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-head">
+      <div class="head-title">
+        <span class="step">02</span>
+        <div><h2>Current Performance Results</h2><p class="hint">Blended from actual mix &amp; spend.</p></div>
+      </div>
+    </div>
+    <div class="performance-results">
+      <article><small>Total Orders</small><strong id="currentOrders">0</strong></article>
+      <article><small>Blended AOV</small><strong id="currentAov">RM0.00</strong></article>
+      <article><small>Total Revenue</small><strong id="currentRevenue">RM0.00</strong></article>
+      <article><small>Total COGS</small><strong id="currentCogs">RM0.00</strong></article>
+      <article><small>Gross Profit</small><strong id="currentGrossProfit">RM0.00</strong></article>
+      <article><small>CPP</small><strong id="currentCpp">RM0.00</strong></article>
+      <article><small>ROAS</small><strong id="currentRoas">0.00x</strong></article>
+      <article><small>ROI</small><strong id="currentRoi">0.00x</strong></article>
+    </div>
+    <div class="net-result">
+      <small>Net Profit / Loss</small>
+      <strong id="currentNetProfit">RM0.00</strong>
     </div>
   </section>
 
