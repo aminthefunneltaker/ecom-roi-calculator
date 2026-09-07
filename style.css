@@ -570,8 +570,8 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding-top:24px}
 /* ---- package pill / tab strip ---- */
 .pkg-pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
 .pkg-pill{
-  display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:10px 15px;min-width:130px;max-width:230px;
+  display:flex;align-items:center;justify-content:center;gap:0;position:relative;
+  padding:8px 6px;min-width:150px;max-width:260px;
   border:1px solid var(--line);border-radius:14px;background:var(--card);
   cursor:pointer;text-align:center;font-family:var(--font-body);box-shadow:var(--shadow-sm);
   -webkit-tap-highlight-color:transparent;
@@ -583,12 +583,25 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding-top:24px}
   background:linear-gradient(180deg,var(--accent-soft),var(--tint-end));
   border-color:var(--accent);box-shadow:0 8px 18px -10px var(--accent-shadow);
 }
+/* symmetric layout: left spacer mirrors right action column so name/GP stay centred */
+.pp-sp{width:42px;flex:0 0 42px;pointer-events:none}
+.pp-acts{width:42px;flex:0 0 42px;display:flex;align-items:center;justify-content:flex-end;gap:3px}
+.pp-center{flex:0 1 auto;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .pp-name{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-width:0}
 .pp-nm{font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:-.01em;
   color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0}
 .pkg-pill.active .pp-nm{color:var(--accent-ink)}
 .pp-gp{font-size:10px;font-weight:800;letter-spacing:.03em;color:var(--muted);font-variant-numeric:tabular-nums}
 .pkg-pill.active .pp-gp{color:var(--accent-ink)}
+/* per-pill action icons (duplicate / remove) */
+.pp-ico{
+  display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;
+  border:1px solid transparent;border-radius:7px;background:transparent;color:var(--faint);
+  padding:0;cursor:pointer;line-height:0;transition:all .13s ease;font-family:var(--font-body);
+}
+.pp-ico:hover{color:var(--accent);background:var(--accent-soft);border-color:var(--accent-line)}
+.pp-ico.pp-del:hover{color:var(--bad);background:var(--bad-soft);border-color:var(--bad)}
+.pp-ico:disabled{opacity:.3;cursor:not-allowed;pointer-events:none}
 
 /* ---- single-package editor ---- */
 .pkg-editor{border:1px solid var(--line);border-radius:var(--r-md);background:var(--card);padding:20px 22px;box-shadow:var(--shadow-sm)}
@@ -621,12 +634,12 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding-top:24px}
 .e-sub .unit{height:44px}
 .e-sub.dim{opacity:.55}
 .e-note{color:var(--faint);font-size:11px;line-height:1.4;margin:0;font-weight:500}
-.e-free{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:10px 13px;border:1px dashed var(--line);border-radius:var(--r-sm);
-  background:var(--field);font-size:12.5px;font-weight:700;color:var(--text);align-self:end;width:100%;
-}
-.e-free .switch{transform:scale(.94);transform-origin:right center}
+/* Free Shipping toggle sits inline on the Shipping card's header row (T11) */
+.e-ship-head{min-height:0;margin:0}
+.e-ship-head .e-label{line-height:1.2}
+.e-free-hd{display:inline-flex;align-items:center;gap:9px;flex:0 0 auto}
+.e-free-txt{font-size:12.5px;font-weight:700;color:var(--text);white-space:nowrap}
+.e-free-hd .switch{transform:scale(.9);transform-origin:right center}
 
 /* SKU editor rows (roomy, one package only) */
 .esku-list{margin-top:2px}
@@ -647,11 +660,13 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding-top:24px}
 .pkg-cmp-wrap table.pkg-cmp{min-width:640px;width:100%;table-layout:fixed}
 .pkg-cmp thead th{text-align:center}
 .pkg-cmp .package-title{margin-top:2px}
+/* T11: compare output numbers/values centred (label col stays left) */
+.pkg-cmp td.cell-value,.pkg-cmp td.good,.pkg-cmp td.discount{text-align:center}
+.pkg-cmp .row-label{text-align:left}
 
 /* editor responsive */
 @media(max-width:760px){
   .e-2col,.e-ship-grid{grid-template-columns:1fr}
-  .e-free{justify-self:stretch}
 }
 @media(max-width:640px){
   .pkg-editor{padding:14px 13px;border-radius:14px}

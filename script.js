@@ -141,20 +141,35 @@ function syncPrimarySelect(){
 }
 
 // pill / tab strip — one per package (name + gross profit). Active = in editor.
+// T11: each pill carries two small icons — duplicate + remove. Icon clicks
+// stopPropagation so they never switch the active pill; a symmetric spacer
+// keeps the name/GP centred.
 function renderPkgStrip(){
   const wrap = $("pkgStrip");
   if(!wrap) return;
   let h = "";
   if(S.packages.length){
+    const many = S.packages.length>1;
     h = '<div class="pkg-pills" role="tablist" aria-label="Select a package to edit">';
     S.packages.forEach((p,i)=>{
       const c = calcPackage(p);
       const on = i===active;
       const prim = i===S.primary;
-      h += `<button type="button" role="tab" aria-selected="${on}" class="pkg-pill${on?" active":""}" data-pill="${i}" title="${prim ? "Primary package — drives Section 02." : "Open this package in the editor."}">
-        <span class="pp-name"><span class="pp-nm">${esc(pkgName(p,i))}</span></span>
-        <span class="pp-gp">GP ${money(c.grossProfit)}</span>
-      </button>`;
+      const cls = "pkg-pill" + (on ? " active" : "");
+      const sel = on ? "true" : "false";
+      const tip = prim ? "Primary package — drives Section 02." : "Open this package in the editor.";
+      const nm = esc(pkgName(p,i));
+      h += `<div class="${cls}" data-pill="${i}" role="tab" aria-selected="${sel}" tabindex="0" title="${tip}">
+        <span class="pp-sp" aria-hidden="true"></span>
+        <span class="pp-center">
+          <span class="pp-name"><span class="pp-nm">${nm}</span></span>
+          <span class="pp-gp">GP ${money(c.grossProfit)}</span>
+        </span>
+        <span class="pp-acts">
+          <button type="button" class="pp-ico pp-dup" data-pillact="dup" data-pi="${i}" title="Duplicate package" aria-label="Duplicate ${nm}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+          <button type="button" class="pp-ico pp-del" data-pillact="del" data-pi="${i}" title="${many ? "Remove package" : "Keep at least one package"}" aria-label="Remove ${nm}" ${many ? "" : "disabled"}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </span>
+      </div>`;
     });
     h += "</div>";
   }
@@ -226,7 +241,6 @@ function renderEditor(){
   el.innerHTML = `
     <div class="editor-head">
       <div class="editor-actions">
-        <button type="button" class="ghost-btn" data-act="dup" title="Duplicate this package">⧉ Duplicate</button>
         ${canRemove ? `<button type="button" class="ghost-btn danger" data-act="del" title="Remove this package">Remove</button>` : ""}
       </div>
     </div>
@@ -244,7 +258,11 @@ function renderEditor(){
       </div>
 
       <div class="e-card">
-        <span class="e-label">Shipping <em class="e-subh">once per order</em></span>
+        <div class="e-card-head e-ship-head">
+          <span class="e-label">Shipping <em class="e-subh">once per order</em></span>
+          <span class="e-free-hd"><span class="e-free-txt">Free Shipping</span>
+            <label class="switch"><input type="checkbox" data-free-ship="1"${off?" checked":""}><span></span></label></span>
+        </div>
         <div class="e-ship-grid">
           <label class="e-sub">Cost — seller
             <div class="unit"><b>RM</b><input type="text" data-numeric="1" inputmode="decimal" data-k="shippingCost" value="${formatNumberInput(p.shippingCost)}"></div>
@@ -252,8 +270,6 @@ function renderEditor(){
           <label class="e-sub${off?" dim":""}">Charge — customer
             <div class="unit"><b>RM</b><input type="text" data-numeric="1" inputmode="decimal" data-k="shippingCharge" value="${formatNumberInput(p.shippingCharge)}"${off?" disabled":""}></div>
             <small class="e-note">Added to price when Free Shipping OFF.</small></label>
-          <div class="e-free"><span>Free Shipping</span>
-            <label class="switch"><input type="checkbox" data-free-ship="1"${off?" checked":""}><span></span></label></div>
         </div>
       </div>
 
@@ -294,10 +310,56 @@ function clonePackage(src){
   return {...src, name:src.name, skus:src.skus.map(s=>({...s})), currentOrders:0};
 }
 
+// Remove package at index i (pill icon / shared), keeping active + primary sane.
+function removePackageAt(i){
+  if(S.packages.length<=1) return false;
+  if(active>i) active--;
+  if(S.primary>i) S.primary--;
+  S.packages.splice(i,1);
+  active = clampIdx(active);
+  S.primary = clampIdx(S.primary);
+  syncAll();
+  return true;
+}
+
+// Duplicate package at index i; place the copy right after it and open it.
+function duplicatePackageAt(i){
+  const src = S.packages[i];
+  if(!src) return;
+  const copy = clonePackage(src);
+  copy.name = (pkgName(src,i).trim() + " (copy)");
+  S.packages.splice(i+1, 0, copy);
+  active = i+1;
+  syncAll();
+}
+
 /* ---------- Section 01 event wiring (delegated once) ---------- */
 $("pkgStrip").addEventListener("click", e=>{
+  // Pill icon buttons (duplicate / remove) act on THEIR pill only, and must
+  // never switch the active tab — stopPropagation guards the pill handler.
+  const ico = e.target.closest("[data-pillact]");
+  if(ico){
+    e.stopPropagation();
+    e.preventDefault();
+    const pi = Number(ico.dataset.pi);
+    if(ico.dataset.pillact === "dup") duplicatePackageAt(pi);
+    else if(ico.dataset.pillact === "del") removePackageAt(pi);
+    return;
+  }
   const b = e.target.closest("[data-pill]");
   if(!b) return;
+  const ni = Number(b.dataset.pill);
+  if(ni===active) return;
+  active = ni;
+  renderEditor();
+  renderPkgStrip();
+});
+// role="tab" parity: Enter / Space activates the pill (was a <button> pre-T11).
+$("pkgStrip").addEventListener("keydown", e=>{
+  if(e.key!=="Enter" && e.key!==" ") return;
+  const b = e.target.closest("[data-pill]");
+  if(!b) return;
+  e.preventDefault();
   const ni = Number(b.dataset.pill);
   if(ni===active) return;
   active = ni;
