@@ -130,7 +130,7 @@ thead th:first-child{width:172px;text-align:left;color:var(--faint);font-size:10
 /* output cells */
 .cell-value{font-weight:800;color:var(--text);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;font-size:13.5px}
 .good{font-weight:800}
-.discount{font-weight:700;color:var(--text-2)}
+.discount{font-weight:800;color:var(--text-2)}
 .center{text-align:center}
 
 /* ---------- Inputs (base) ---------- */
@@ -161,7 +161,15 @@ small{display:block;color:var(--muted);font-size:11.5px;line-height:1.45;margin-
 .table-wrap input{height:34px;font-size:12.5px;padding:6px 9px;border-radius:8px}
 .table-wrap .unit{height:34px;margin-top:0;border-radius:8px}
 .table-wrap .unit b{padding:0 8px;font-size:10.5px}
-.toggle-cell{display:flex;justify-content:center;align-items:center;height:34px}
+/* Shipping cell (per package column): cost seller / charge customer + Free Shipping toggle */
+.ship-cell{display:flex;flex-direction:column;gap:7px;min-width:150px;text-align:left}
+.ship-field{display:flex;flex-direction:column;gap:3px}
+.ship-mini{font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);cursor:help}
+.ship-field.dim{opacity:.5}
+.ship-free{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ship-free .ship-mini{cursor:default;color:var(--muted)}
+.ship-free .switch{transform:scale(.92);transform-origin:right center}
+.table-wrap input:disabled{background:#f4f6fa;color:var(--muted);cursor:not-allowed}
 /* current performance package column shows real names — no forced caps */
 .current-packages thead th:not(:first-child){text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:800;color:var(--text)}
 
