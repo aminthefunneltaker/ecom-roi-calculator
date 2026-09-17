@@ -148,20 +148,40 @@ function renderRows(){
   calculate();
 }
 
+function updateShippingPolicy(){
+  const zone = $("shippingZone").value;
+  const peninsular = zone === "peninsular";
+  const enabled = peninsular && $("freeShipping").checked;
+  const threshold = numberValue($("freeShippingThreshold").value);
+  $("freeShipping").disabled = !peninsular;
+  $("freeShippingThreshold").disabled = !enabled;
+  $("freeShippingThreshold").closest(".threshold-field").classList.toggle("disabled", !enabled);
+  if(!peninsular) $("shippingRuleNote").textContent = `Customer charge: RM${formatNumber(numberValue($("customerShipping").value))} · Free shipping unavailable`;
+  else if(enabled) $("shippingRuleNote").textContent = `Below RM${formatNumber(threshold)}: RM${formatNumber(numberValue($("customerShipping").value))} · RM${formatNumber(threshold)} and above: Free`;
+  else $("shippingRuleNote").textContent = `Customer charge: RM${formatNumber(numberValue($("customerShipping").value))} · Free shipping OFF`;
+}
+
+function effectiveCustomerShipping(price){
+  const zone = $("shippingZone").value;
+  const free = zone === "peninsular" && $("freeShipping").checked;
+  const threshold = numberValue($("freeShippingThreshold").value);
+  return free && threshold > 0 && price >= threshold ? 0 : numberValue($("customerShipping").value);
+}
+
 function applyShippingZone(zone){
   const rates = SHIPPING_RATES[zone] || SHIPPING_RATES.peninsular;
   $("sellerShipping").value = formatNumber(rates.seller);
   $("customerShipping").value = formatNumber(rates.customer);
+  updateShippingPolicy();
   calculate();
 }
 
 function calculate(){
   const sellerShipping = numberValue($("sellerShipping").value);
-  const customerShipping = numberValue($("customerShipping").value);
   const taxRate = numberValue($("tax").value) / 100;
   const totalShare = rows.reduce((sum, row) => sum + row.share, 0);
-  const aov = rows.reduce((sum, row) => sum + row.share / 100 * (row.price + customerShipping), 0);
-  const grossProfit = rows.reduce((sum, row) => sum + row.share / 100 * (row.price + customerShipping - row.cost - sellerShipping), 0);
+  const aov = rows.reduce((sum, row) => sum + row.share / 100 * (row.price + effectiveCustomerShipping(row.price)), 0);
+  const grossProfit = rows.reduce((sum, row) => sum + row.share / 100 * (row.price + effectiveCustomerShipping(row.price) - row.cost - sellerShipping), 0);
   const grossMargin = aov ? grossProfit / aov : 0;
   const targetNet = grossProfit * profitPct / 100;
   const cppInc = grossProfit - targetNet;
@@ -227,7 +247,9 @@ $("customProfit").addEventListener("input", event => { formatInput(event.target)
 $("tax").addEventListener("input", event => { formatInput(event.target); calculate(); });
 $("profit").addEventListener("input", event => { formatInput(event.target); calculate(); });
 $("sellerShipping").addEventListener("input", event => { formatInput(event.target); calculate(); });
-$("customerShipping").addEventListener("input", event => { formatInput(event.target); calculate(); });
+$("customerShipping").addEventListener("input", event => { formatInput(event.target); updateShippingPolicy(); calculate(); });
+$("freeShipping").addEventListener("change", () => { updateShippingPolicy(); calculate(); });
+$("freeShippingThreshold").addEventListener("input", event => { formatInput(event.target); updateShippingPolicy(); calculate(); });
 $("shippingZone").addEventListener("change", event => applyShippingZone(event.target.value));
 $("addSku").addEventListener("click", () => { rows.push({name:`SKU ${rows.length + 1}`, share:0, price:0, cost:0}); renderRows(); });
 $("downloadTemplate").addEventListener("click", downloadTemplate);
@@ -241,5 +263,6 @@ $("themeToggle").addEventListener("click", () => {
   $("themeToggle").setAttribute("aria-pressed", String(!dark));
 });
 
+updateShippingPolicy();
 setProfit(20);
 renderRows();

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 <main class="app">
@@ -55,8 +55,15 @@
         </label>
         <label>Charge — customer
           <div class="unit"><b>RM</b><input id="customerShipping" type="text" inputmode="decimal" value="10" aria-label="Shipping charge customer"></div>
-          <small>Added to order revenue and AOV.</small>
+          <small>Added to order revenue when applicable.</small>
         </label>
+      </div>
+      <div class="shipping-policy">
+        <label class="policy-check"><input id="freeShipping" type="checkbox" checked><span>Free shipping over minimum purchase</span></label>
+        <label class="threshold-field" for="freeShippingThreshold">Minimum purchase
+          <div class="unit"><b>RM</b><input id="freeShippingThreshold" type="text" inputmode="decimal" value="150"></div>
+        </label>
+        <p id="shippingRuleNote" class="policy-note">Below RM150: RM10 · RM150 and above: Free</p>
       </div>
     </div>
 
@@ -93,6 +100,6 @@
 
   <footer>Developed by Funnel Taker Marketing · Internal use</footer>
 </main>
-<script src="script.js?v=6"></script>
+<script src="script.js?v=7"></script>
 </body>
 </html>
