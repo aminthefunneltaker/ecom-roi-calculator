@@ -176,6 +176,7 @@ function calculate(){
   const monthlyAdsInc = orders * cppInc;
 
   $("shareTotal").textContent = formatNumber(totalShare) + "%";
+  $("aovValue").textContent = money(aov);
   $("targetNetProfit").textContent = money(targetNet);
   $("cppExTax").textContent = money(cppEx);
   $("cppIncTax").textContent = money(cppInc);
