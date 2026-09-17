@@ -1,38 +1,38 @@
 /* ============================================================
-   ecom-roi-calculator — THEME ENGINE + DASHBOARD RE-SKIN (T5)
-   Visual identity: "Growth ledger" — deep green profit language
-   on paper. Space Grotesk display + Inter body. Calculation
+   ecom-roi-calculator — Funnel Taker Marketing brand UI
+   Visual identity: Funnel Taker orange on a clean, neutral canvas.
+   Poppins throughout. Calculation
    logic is 100% untouched (e622a32 / d0735c2). This file is
    visual only.
-   Light = default :root tokens (identical to pre-T5 look).
-   Dark  = html[data-theme="dark"] override — forest-green, not
-   too heavy. One token set drives both modes.
+   Light = default :root tokens from the Funnel Taker brand guide.
+   Dark  = html[data-theme="dark"] override with orange accents.
+   One token set drives both modes.
    ============================================================ */
 
 /* ---------- Light tokens (default) ---------- */
 :root{
   color-scheme:light;
-  --bg:#eef1ec;            /* warm paper-sage canvas */
+  --bg:#F7F7F7;            /* Funnel Taker light background */
   --halo:rgba(255,255,255,.9);           /* body radial highlight */
-  --surface:#fff;          /* panels & table */
-  --card:#fff;             /* inner raised cards */
-  --field:#fff;            /* input / control field bg */
-  --thead:#f7faf7;         /* table header band */
-  --ink:#14201a;           /* headings / primary text (green-black) */
-  --text:#2c3a32;          /* body */
-  --muted:#64746b;         /* tertiary */
-  --faint:#8b9a90;         /* faint / placeholders */
-  --line:#dbe3dc;          /* borders */
-  --line-2:#e7ede7;        /* inner hairlines */
-  --line-3:#f1f5f1;        /* soft tiles */
-  --accent:#0d7a53;        /* brand — deep profit green */
-  --accent-2:#0b6847;      /* hover / darker */
-  --accent-ink:#0a5f43;    /* text on tint */
-  --accent-soft:#e4f3eb;   /* soft tint fill */
-  --accent-line:#c9e3d3;   /* tint border */
-  --accent-glow:rgba(13,122,83,.10);     /* hero blob */
-  --accent-shadow:rgba(13,122,83,.75);   /* accent drop shadow */
-  --focus-ring:rgba(13,122,83,.13);
+  --surface:#FFFFFF;       /* panels & table */
+  --card:#FFFFFF;          /* inner raised cards */
+  --field:#FFFFFF;         /* input / control field bg */
+  --thead:#F7F7F7;         /* table header band */
+  --ink:#111111;           /* dark / heading */
+  --text:#333333;          /* body text */
+  --muted:#666666;         /* tertiary */
+  --faint:#888888;         /* faint / placeholders */
+  --line:#E5E5E5;          /* border / light grey */
+  --line-2:#E5E5E5;        /* inner hairlines */
+  --line-3:#F7F7F7;        /* soft tiles */
+  --accent:#FF5A1F;        /* Funnel Taker primary orange */
+  --accent-2:#E94D17;      /* hover / darker */
+  --accent-ink:#C94314;    /* text on tint */
+  --accent-soft:#FFF0EA;   /* soft tint fill */
+  --accent-line:#FFCAB8;   /* tint border */
+  --accent-glow:rgba(255,90,31,.12);      /* hero blob */
+  --accent-shadow:rgba(255,90,31,.38);    /* accent drop shadow */
+  --focus-ring:rgba(255,90,31,.18);
   --good:#1b8a4e;
   --good-soft:#e8f6ee;
   --bad:#cf3f35;
@@ -42,62 +42,61 @@
   --on-accent:#fff;        /* text on solid accent fill */
   --glass:rgba(255,255,255,.7);
   --glass-strong:rgba(255,255,255,.92);
-  --hero-grad:linear-gradient(118deg,#fbfdfb 0%,#f2f8f4 46%,#e9f3ed 100%);
-  --tint-end:#f5faf7;      /* end stop of accent-tint gradients */
-  --net-end:#eef7f1;
-  --tip-bg:#0f2a1e;        /* info popup */
-  --tip-text:#eaf4ee;
+  --hero-grad:linear-gradient(118deg,#FFFFFF 0%,#FFF8F5 52%,#FFF0EA 100%);
+  --tint-end:#FFF8F5;      /* end stop of accent-tint gradients */
+  --net-end:#FFF4EF;
+  --tip-bg:#111111;        /* info popup */
+  --tip-text:#FFFFFF;
   --tip-border:rgba(255,255,255,.08);
-  --shadow-sm:0 1px 2px rgba(20,32,26,.05);
-  --shadow-md:0 1px 2px rgba(20,32,26,.05),0 18px 34px -20px rgba(20,43,30,.22);
-  --shadow-pop:0 14px 34px -14px rgba(20,32,26,.28);
+  --shadow-sm:0 1px 2px rgba(17,17,17,.05);
+  --shadow-md:0 1px 2px rgba(17,17,17,.05),0 18px 34px -20px rgba(17,17,17,.16);
+  --shadow-pop:0 14px 34px -14px rgba(17,17,17,.22);
   --r-lg:20px;--r-md:14px;--r-sm:10px;
-  --font-display:"Space Grotesk","Inter",system-ui,sans-serif;
-  --font-body:"Inter","SF Pro Text",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-display:"Poppins",system-ui,sans-serif;
+  --font-body:"Poppins",system-ui,sans-serif;
 }
 
 /* ---------- Dark tokens (forest green, not too heavy) ---------- */
 html[data-theme="dark"]{
   color-scheme:dark;
-  --bg:#0e1712;            /* charcoal-green canvas — brightened (not too dark) */
-  --halo:rgba(24,50,36,.5);            /* soft top sheen */
-  --surface:#16221c;       /* panels */
-  --card:#1b2a22;          /* inner raised cards (a touch lighter) */
-  --field:#121e17;         /* inputs sit slightly into the canvas */
-  --thead:#121d17;
-  --ink:#eaf3ed;           /* headings — bright soft green-white */
-  --text:#cfdad3;          /* body */
-  --muted:#93a99d;
-  --faint:#6b8375;
-  --line:#2a3c33;          /* borders */
-  --line-2:#22342b;
-  --line-3:#1b2a23;
-  --accent:#2faf7c;        /* brighter accent for contrast on dark */
-  --accent-2:#3cbd8a;
-  --accent-ink:#8fe3bb;    /* light text on deep-green tint */
-  --accent-soft:#123321;   /* deep green tint fill */
-  --accent-line:#1f4a36;   /* tint border */
-  --accent-glow:rgba(47,175,124,.18);
-  --accent-shadow:rgba(47,175,124,.35);
-  --focus-ring:rgba(47,175,124,.30);
-  --good:#3ecf83;
-  --good-soft:#0f2f1e;
-  --bad:#ff7a70;
-  --bad-soft:#3a1614;
-  --switch-off:#2c3b33;
-  --knob:#e6efe9;
-  --on-accent:#07140e;     /* dark text on bright accent fill */
-  --glass:rgba(15,26,20,.55);
-  --glass-strong:rgba(14,24,18,.92);
-  --hero-grad:linear-gradient(118deg,#0d1611 0%,#0f1c16 48%,#0c1711 100%);
-  --tint-end:#0e1a14;
-  --net-end:#0d1b15;
-  --tip-bg:#d7e6dd;        /* inverted light popup on dark */
-  --tip-text:#0b241a;
-  --tip-border:rgba(11,36,26,.25);
+  --bg:#111111;            /* dark inverse canvas */
+  --halo:rgba(255,90,31,.12);             /* soft top sheen */
+  --surface:#222222;       /* panels */
+  --card:#2A2A2A;          /* inner raised cards */
+  --field:#1A1A1A;         /* input / control field bg */
+  --thead:#1A1A1A;
+  --ink:#FFFFFF;           /* accessible inverse heading */
+  --text:#F2F2F2;          /* accessible inverse body */
+  --muted:#C7C7C7;
+  --faint:#999999;
+  --line:#444444;          /* borders */
+  --line-2:#383838;
+  --line-3:#2A2A2A;
+  --accent:#FF5A1F;        /* Funnel Taker primary orange */
+  --accent-2:#FF7546;
+  --accent-ink:#FFB49B;    /* light text on tint */
+  --accent-soft:#3A1E15;   /* dark orange tint fill */
+  --accent-line:#75402D;   /* tint border */
+  --accent-glow:rgba(255,90,31,.20);
+  --accent-shadow:rgba(255,90,31,.32);
+  --focus-ring:rgba(255,90,31,.32);
+  --good:#55D68B;
+  --good-soft:#173524;
+  --bad:#FF867C;
+  --bad-soft:#3A1A18;
+  --switch-off:#555555;
+  --knob:#FFFFFF;
+  --on-accent:#111111;     /* dark text on bright accent fill */
+  --glass:rgba(17,17,17,.55);
+  --glass-strong:rgba(17,17,17,.92);
+  --hero-grad:linear-gradient(118deg,#111111 0%,#24201E 48%,#2A1B15 100%);
+  --tint-end:#2A1B15;
+  --net-end:#211814;
+  --tip-bg:#FFFFFF;        /* inverted light popup on dark */
+  --tip-text:#111111;
   --shadow-sm:0 1px 2px rgba(0,0,0,.35);
-  --shadow-md:0 1px 2px rgba(0,0,0,.35),0 18px 34px -20px rgba(0,0,0,.6);
-  --shadow-pop:0 14px 34px -14px rgba(0,0,0,.65);
+  --shadow-md:0 1px 2px rgba(0,0,0,.45),0 18px 34px -20px rgba(0,0,0,.7);
+  --shadow-pop:0 14px 34px -14px rgba(0,0,0,.75);
 }
 
 /* Smooth cross-fade when toggling theme (bg & colour only). */
