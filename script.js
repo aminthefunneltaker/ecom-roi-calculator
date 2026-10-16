@@ -286,6 +286,7 @@ function refreshReadonly(){
   renderCompare();
   syncPrimarySelect();
   updateProfitability();
+  scheduleAutoSave();
 }
 
 // Full rebuild after a structural change (add / remove / duplicate / switch pill).
@@ -297,6 +298,7 @@ function syncAll(){
   renderCurrentPackageTable();
   updateCurrentPerformance();
   updateProfitability();
+  scheduleAutoSave();
 }
 
 function clonePackage(src){
@@ -377,7 +379,7 @@ $("pkgEditor").addEventListener("input", e=>{
   }
   const k = t.dataset.k;
   if(!k) return;
-  if(k === "name"){ pkg.name = t.value; renderPkgStrip(); renderCompare(); syncPrimarySelect(); return; }
+  if(k === "name"){ pkg.name = t.value; renderPkgStrip(); renderCompare(); syncPrimarySelect(); scheduleAutoSave(); return; }
   formatLiveNumber(t);
   pkg[k] = parseInputValue(t.value);
   refreshReadonly();
@@ -499,6 +501,7 @@ function setProfit(v){
   }
   document.querySelectorAll("#profitPresets button").forEach(b=>b.classList.toggle("active",b.dataset.v===String(v)));
   updateProfitability();
+  scheduleAutoSave();
 }
 
 [0,20,30,40,50].forEach(v=>{
@@ -510,10 +513,10 @@ const customBtn=document.createElement("button");
 customBtn.textContent="Custom"; customBtn.dataset.v="custom"; customBtn.onclick=()=>setProfit("custom");
 $("profitPresets").appendChild(customBtn);
 
-$("customProfit").addEventListener("input",e=>{ formatLiveNumber(e.target); S.profitPct=parseInputValue(e.target.value); updateProfitability(); });
+$("customProfit").addEventListener("input",e=>{ formatLiveNumber(e.target); S.profitPct=parseInputValue(e.target.value); updateProfitability(); scheduleAutoSave(); });
 
-$("primaryPackage").onchange=e=>{S.primary=Number(e.target.value);updateProfitability();renderPkgStrip();renderCompare();};
-$("taxRate").addEventListener("input",e=>{formatLiveNumber(e.target);S.taxRate=parseInputValue(e.target.value);updateProfitability();});
+$("primaryPackage").onchange=e=>{S.primary=Number(e.target.value);updateProfitability();renderPkgStrip();renderCompare();scheduleAutoSave();};
+$("taxRate").addEventListener("input",e=>{formatLiveNumber(e.target);S.taxRate=parseInputValue(e.target.value);updateProfitability();scheduleAutoSave();});
 $("commissionEnabled").onchange=e=>{
   S.commissionEnabled = e.target.checked;
   if(S.commissionEnabled){
@@ -524,13 +527,15 @@ $("commissionEnabled").onchange=e=>{
   }
   $("commissionFields").classList.toggle("hidden",!S.commissionEnabled);
   updateProfitability();
+  scheduleAutoSave();
 };
-$("commissionPct").addEventListener("input",e=>{formatLiveNumber(e.target);S.commissionPct=parseInputValue(e.target.value);updateProfitability();});
-$("targetCommission").addEventListener("input",e=>{formatLiveNumber(e.target);S.targetCommission=parseInputValue(e.target.value);updateProfitability();});
+$("commissionPct").addEventListener("input",e=>{formatLiveNumber(e.target);S.commissionPct=parseInputValue(e.target.value);updateProfitability();scheduleAutoSave();});
+$("targetCommission").addEventListener("input",e=>{formatLiveNumber(e.target);S.targetCommission=parseInputValue(e.target.value);updateProfitability();scheduleAutoSave();});
 $("requiredNet").addEventListener("input",e=>{
   if(S.commissionEnabled) return; // read-only auto path
   formatLiveNumber(e.target);
   updateProfitability();
+  scheduleAutoSave();
 });
 
 /* ============================================================
@@ -584,11 +589,13 @@ $("currentPackageTable").addEventListener("input",e=>{
   formatLiveNumber(e.target);
   S.packages[Number(i)].currentOrders=parseInputValue(e.target.value);
   updateCurrentPerformance();
+  scheduleAutoSave();
 });
 
 $("currentAdsSpend").addEventListener("input",e=>{
   formatLiveNumber(e.target);
   updateCurrentPerformance();
+  scheduleAutoSave();
 });
 
 document.querySelectorAll(".tab").forEach(tab=>{
@@ -604,5 +611,207 @@ document.querySelectorAll(".tab").forEach(tab=>{
   };
 });
 
+/* ============================================================
+   INTERNAL SAVED SCENARIOS
+   Browser-local MVP: named snapshots + debounced autosave.
+   ============================================================ */
+const SCENARIO_STORAGE_KEY = "ecom-roi-scenarios-v1";
+let scenarioRecords = [];
+let activeScenarioId = null;
+let scenarioSaveTimer = null;
+let suppressAutosave = false;
+
+function scenarioNow(){ return new Date().toISOString(); }
+function scenarioId(){ return "sc_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,8); }
+function cloneValue(value){
+  return JSON.parse(JSON.stringify(value));
+}
+function scenarioElement(id){ return document.getElementById(id); }
+function scenarioNameValue(){
+  const el = scenarioElement("scenarioName");
+  return String(el && el.value || "").trim().slice(0,80);
+}
+function scenarioStatus(text, tone){
+  const el = scenarioElement("scenarioStatus");
+  if(!el) return;
+  el.textContent = text;
+  el.dataset.tone = tone || "";
+}
+function scenarioStorageRead(){
+  try{
+    if(typeof localStorage === "undefined") return [];
+    const raw = localStorage.getItem(SCENARIO_STORAGE_KEY);
+    if(!raw) return [];
+    const parsed = JSON.parse(raw);
+    if(!parsed || parsed.version !== 1 || !Array.isArray(parsed.records)) return [];
+    return parsed.records.filter(r => r && typeof r.id === "string" && typeof r.name === "string" && r.state && typeof r.state === "object");
+  }catch(e){
+    return [];
+  }
+}
+function scenarioStorageWrite(){
+  try{
+    if(typeof localStorage === "undefined") return false;
+    localStorage.setItem(SCENARIO_STORAGE_KEY, JSON.stringify({version:1, records:scenarioRecords}));
+    return true;
+  }catch(e){
+    scenarioStatus("Unable to save in this browser", "error");
+    return false;
+  }
+}
+function currentScenarioState(){
+  return {
+    calculator: cloneValue(S),
+    customProfit: scenarioElement("customProfit")?.value || "",
+    requiredNet: scenarioElement("requiredNet")?.value || "",
+    currentAdsSpend: scenarioElement("currentAdsSpend")?.value || ""
+  };
+}
+function applyScenarioState(snapshot){
+  if(!snapshot || !snapshot.calculator || !Array.isArray(snapshot.calculator.packages)) return false;
+  suppressAutosave = true;
+  try{
+    S = cloneValue(snapshot.calculator);
+    S.packages.forEach(normalizePackage);
+    S.primary = clampIdx(Number(S.primary) || 0);
+    const custom = scenarioElement("customProfit");
+    const required = scenarioElement("requiredNet");
+    const ads = scenarioElement("currentAdsSpend");
+    if(custom) custom.value = snapshot.customProfit ?? "40";
+    if(required) required.value = snapshot.requiredNet ?? "10,000";
+    if(ads) ads.value = snapshot.currentAdsSpend ?? "0";
+    $("commissionEnabled").checked = !!S.commissionEnabled;
+    $("commissionPct").value = formatPlain(S.commissionPct);
+    $("targetCommission").value = formatPlain(S.targetCommission);
+    $("taxRate").value = formatPlain(S.taxRate);
+    setProfit(S.profitPct);
+    $("commissionFields").classList.toggle("hidden", !S.commissionEnabled);
+    syncAll();
+    return true;
+  }finally{
+    suppressAutosave = false;
+  }
+}
+function renderScenarioList(){
+  const list = scenarioElement("scenarioList");
+  const count = scenarioElement("scenarioCount");
+  if(count) count.textContent = String(scenarioRecords.length);
+  if(!list) return;
+  if(!scenarioRecords.length){
+    list.innerHTML = '<li class="sc-empty">No saved scenarios yet.</li>';
+    return;
+  }
+  list.innerHTML = scenarioRecords.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt))).map(r=>{
+    const active = r.id === activeScenarioId ? " active" : "";
+    const date = new Date(r.updatedAt).toLocaleString("en-MY", {dateStyle:"medium", timeStyle:"short"});
+    return `<li class="sc-item${active}" data-scenario-id="${esc(r.id)}">
+      <button type="button" class="sc-load" data-scenario-action="load" data-scenario-id="${esc(r.id)}"><strong>${esc(r.name)}</strong><small>${date}</small></button>
+      <span class="sc-item-actions"><button type="button" class="sc-mini" data-scenario-action="rename" data-scenario-id="${esc(r.id)}" aria-label="Rename ${esc(r.name)}">Rename</button><button type="button" class="sc-mini danger" data-scenario-action="delete" data-scenario-id="${esc(r.id)}" aria-label="Delete ${esc(r.name)}">Delete</button></span>
+    </li>`;
+  }).join("");
+}
+function setScenarioName(name){
+  const el = scenarioElement("scenarioName");
+  if(el) el.value = String(name || "").slice(0,80);
+}
+function saveScenario(name, forceNew){
+  const cleanName = String(name || scenarioNameValue()).trim().slice(0,80);
+  if(!cleanName){
+    scenarioStatus("Enter a scenario name to save", "error");
+    scenarioElement("scenarioName")?.focus();
+    return false;
+  }
+  let record = !forceNew && activeScenarioId ? scenarioRecords.find(r=>r.id===activeScenarioId) : null;
+  if(!record){
+    record = {id:scenarioId(), name:cleanName, createdAt:scenarioNow(), updatedAt:scenarioNow(), state:null};
+    scenarioRecords.push(record);
+    activeScenarioId = record.id;
+  }
+  record.name = cleanName;
+  record.updatedAt = scenarioNow();
+  record.state = currentScenarioState();
+  setScenarioName(record.name);
+  const ok = scenarioStorageWrite();
+  renderScenarioList();
+  scenarioStatus(ok ? `Saved · ${record.name}` : "Unable to save in this browser", ok ? "success" : "error");
+  return ok;
+}
+function scheduleAutoSave(){
+  if(suppressAutosave || !activeScenarioId || !scenarioNameValue()) return;
+  if(typeof clearTimeout === "function") clearTimeout(scenarioSaveTimer);
+  if(typeof setTimeout !== "function") return;
+  scenarioSaveTimer = setTimeout(()=>saveScenario(scenarioNameValue(), false), 500);
+  scenarioStatus("Unsaved changes…", "pending");
+}
+function loadScenario(id){
+  const record = scenarioRecords.find(r=>r.id===id);
+  if(!record || !applyScenarioState(record.state)) return false;
+  activeScenarioId = record.id;
+  setScenarioName(record.name);
+  renderScenarioList();
+  scenarioStatus(`Loaded · ${record.name}`, "success");
+  return true;
+}
+function newScenario(){
+  activeScenarioId = null;
+  setScenarioName("");
+  applyScenarioState({calculator:{packages:[{name:"Nama pakej",skus:[{name:"SKU 1",qty:1,productCost:30}],shippingCost:4.5,shippingCharge:10,freeShip:false,regular:149,selling:89,currentOrders:0}],primary:0,profitPct:20,taxRate:8,commissionEnabled:false,commissionPct:40,targetCommission:4000},customProfit:"40",requiredNet:"10,000",currentAdsSpend:"0"});
+  renderScenarioList();
+  scenarioStatus("New scenario · enter a name to enable autosave", "");
+}
+function scenarioPrompt(message, fallback){
+  if(typeof window !== "undefined" && typeof window.prompt === "function") return window.prompt(message, fallback || "");
+  return null;
+}
+function scenarioConfirm(message){
+  return typeof window !== "undefined" && typeof window.confirm === "function" ? window.confirm(message) : true;
+}
+function bindScenarioUi(){
+  scenarioElement("scenarioName")?.addEventListener("input", ()=>{
+    if(activeScenarioId) scheduleAutoSave();
+    else scenarioStatus("Enter Save to create this scenario", "");
+  });
+  scenarioElement("scenarioSave")?.addEventListener("click", ()=>saveScenario(scenarioNameValue(), false));
+  scenarioElement("scenarioSaveAs")?.addEventListener("click", ()=>{
+    const proposed = scenarioPrompt("Save as scenario name:", scenarioNameValue() ? `${scenarioNameValue()} copy` : "");
+    if(proposed !== null) saveScenario(proposed, true);
+  });
+  scenarioElement("scenarioNew")?.addEventListener("click", ()=>newScenario());
+  scenarioElement("scenarioList")?.addEventListener("click", e=>{
+    const action = e.target.closest("[data-scenario-action]")?.dataset.scenarioAction;
+    const id = e.target.closest("[data-scenario-id]")?.dataset.scenarioId;
+    if(!action || !id) return;
+    const record = scenarioRecords.find(r=>r.id===id);
+    if(action === "load") loadScenario(id);
+    else if(action === "rename" && record){
+      const renamed = scenarioPrompt("Rename scenario:", record.name);
+      const clean = String(renamed ?? "").trim().slice(0,80);
+      if(renamed !== null && clean){
+        record.name = clean;
+        record.updatedAt = scenarioNow();
+        scenarioStorageWrite();
+        if(activeScenarioId === id) setScenarioName(record.name);
+        renderScenarioList();
+        scenarioStatus(`Renamed · ${record.name}`, "success");
+      }
+    }else if(action === "delete" && record && scenarioConfirm(`Delete “${record.name}”?`)){
+      scenarioRecords = scenarioRecords.filter(r=>r.id!==id);
+      if(activeScenarioId === id){ activeScenarioId = null; setScenarioName(""); }
+      scenarioStorageWrite();
+      renderScenarioList();
+      scenarioStatus("Scenario deleted", "success");
+    }
+  });
+}
+function initScenarioStore(){
+  scenarioRecords = scenarioStorageRead();
+  bindScenarioUi();
+  renderScenarioList();
+  const latest = scenarioRecords.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
+  if(latest) loadScenario(latest.id);
+  else scenarioStatus("Auto-save on · enter a name to save", "");
+}
+
 setProfit(20);
 syncAll();
+initScenarioStore();

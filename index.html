@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Meta Ads Ecom Profit Calculator</title>
+<title>Ecom ROI Calculator · Funnel Taker Internal</title>
+<meta name="description" content="Funnel Taker internal ecom ROI calculator: package economics, Meta Ads targets and current performance with saved scenarios.">
+<meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="data:,">
 <script>
 /* No-FOUC: apply saved theme before first paint. Default = light. */
@@ -25,9 +27,31 @@
       <span class="tt-label tt-lab-dark">Dark</span>
       <span class="tt-label tt-lab-light">Light</span>
     </button>
-    <p class="eyebrow">E-commerce Tool</p>
-    <h1>Meta Ads Profit Calculator</h1>
-    <p class="sub">Per-order profit, CPP, ROAS &amp; targets — for e-commerce Meta Ads.</p>
+    <p class="eyebrow">Funnel Taker · Internal Tool</p>
+    <h1>Ecom ROI Calculator</h1>
+    <p class="sub">Internal dashboard for client package economics, Meta Ads CPP / ROAS targets and current performance.</p>
+
+    <section id="scenarioPanel" class="sc-bar" aria-labelledby="scenarioHeading">
+      <h2 id="scenarioHeading" class="sr-only">Scenarios</h2>
+      <div class="sc-field">
+        <label for="scenarioName" class="sc-label">Scenario name <span class="hint-chip">Active</span></label>
+        <input id="scenarioName" type="text" maxlength="80" placeholder="e.g. Client A – Raya promo" autocomplete="off">
+      </div>
+      <div class="sc-actions">
+        <button id="scenarioSave" class="primary-btn" type="button">Save</button>
+        <button id="scenarioSaveAs" class="ghost-btn" type="button">Save As</button>
+        <button id="scenarioNew" class="ghost-btn" type="button">New</button>
+      </div>
+      <div class="sc-meta-row">
+        <p id="scenarioStatus" class="sc-status" role="status" aria-live="polite">Auto-save on · this browser only</p>
+        <details id="scenarioDrawer" class="sc-drawer">
+          <summary>Saved scenarios (<span id="scenarioCount">0</span>)</summary>
+          <ul id="scenarioList" class="sc-list"></ul>
+          <p class="sc-note">Stored in this browser's localStorage only — not shared across devices or team members. Clearing browser data deletes saved scenarios.</p>
+        </details>
+      </div>
+    </section>
+
     <nav class="tabs">
       <button class="tab active" data-tab="main">Profitability &amp; Target</button>
       <button class="tab" data-tab="current">Current Performance</button>
@@ -211,7 +235,7 @@
 
   </div>
 
-  <footer>Dibangunkan oleh Funnel Taker Marketing</footer>
+  <footer>Funnel Taker Marketing · Internal use only</footer>
 </main>
 <script src="script.js?v=t12"></script>
 <script>
